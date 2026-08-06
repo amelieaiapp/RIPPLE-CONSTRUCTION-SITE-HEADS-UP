@@ -1,0 +1,3336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a2332">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ripple Heads-Up</title>
+<script>
+/* ============================================================
+ * SINGLE SOURCE OF TRUTH for the revision number.
+ * WHEN ISSUING AN UPDATE:
+ *   1. Change ONLY the string below (e.g. to '0.1.1' or '0.2.0').
+ *   2. Save/download the file as RippleHeadsUp_Rev_X_Y_Z.html
+ *      (match the dots to underscores; do NOT keep browser's (1)/(2) suffix).
+ *   3. The UI title, footer, topbar, core, and module versions all read this.
+ * That is the whole process. No hunting through the file.
+ * ============================================================ */
+window.RIPPLE_REV = '0.1.19';
+/* Support contact shown in Help and for Store listing — change the string below */
+window.RIPPLE_SUPPORT_EMAIL = 'amelie.ai.support@gmail.com';
+window.RIPPLE_SUPPORT_LABEL = 'App support';
+</script>
+<style>
+:root{
+  --ink:#1C2126; --ink-2:#2C333A; --paper:#E9ECEE; --surface:#F5F7F8; --line:#C6CDD2;
+  --muted:#5C666E; --hivis:#F2A900; --steel:#2B4C6F; --red:#D64B3E; --amber:#E8A33D; --green:#3E9D63;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box} html,body{margin:0}
+body{font-family:var(--sans); background:var(--paper); color:var(--ink); -webkit-text-size-adjust:100%;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:28px 28px; background-position:-1px -1px; background-blend-mode:normal;}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.86;z-index:-1}
+#app{max-width:880px;margin:0 auto;padding:0 16px 64px}
+button{font-family:var(--sans);cursor:pointer;border:none}
+.btn{min-height:48px;padding:0 22px;border-radius:2px;font-weight:700;letter-spacing:.02em;font-size:15px;background:var(--ink);color:#fff}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--hivis);color:var(--ink);box-shadow:0 2px 0 #b98400}
+.btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);min-height:40px}
+.btn:hover{filter:brightness(1.05)}
+
+/* gate + import */
+.gate,.import,.errbox{max-width:640px;margin:56px auto 0;padding:34px 30px;background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--hivis)}
+.gate-eyebrow,.import-eyebrow,.err-eyebrow{font:700 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--hivis);margin-bottom:14px}
+.gate-title{font-size:32px;line-height:1.08;letter-spacing:-.01em;margin:0 0 16px}
+.import-title{font-size:26px;margin:0 0 18px}
+.gate-lead{font-size:17px;line-height:1.5;color:var(--ink-2);margin:0 0 20px}
+.gate-list{list-style:none;padding:0;margin:0 0 22px;border-top:1px solid var(--line)}
+.gate-list li{padding:13px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.45;color:var(--ink-2)}
+.gate-list strong{color:var(--ink)}
+.gate-warn{font-size:15px;line-height:1.45;color:var(--red);font-weight:600;padding:14px 16px;background:rgba(214,75,62,.07);border-left:3px solid var(--red);margin:0 0 24px}
+.gate-mantra{font:800 22px/1 var(--sans);letter-spacing:.03em;text-transform:uppercase;color:var(--hivis);margin:0 0 18px}
+.gate-region{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 24px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.gate-region-lab{font:700 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.gate-region-btn{min-height:40px;padding:0 15px;background:var(--paper);border:1px solid var(--line);border-radius:2px;font:700 13px var(--sans);color:var(--muted);cursor:pointer}
+.gate-region-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.region-opts{display:flex;flex-direction:column;gap:10px;margin:8px 0 22px}
+.region-btn{text-align:left;background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--hivis);padding:16px 18px;cursor:pointer;transition:.12s}
+.region-btn:hover{background:#fff;border-left-color:var(--steel)}
+.region-name{font:800 17px/1.1 var(--sans)}
+.region-eg{font:600 12px/1 var(--mono);color:var(--muted);margin-top:7px}
+.app-foot{text-align:center;padding:26px 0 6px;font:700 11px/1.6 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.app-foot .mantra{color:var(--hivis)}
+.dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:44px 20px;border:2px dashed var(--line);background:var(--paper);cursor:pointer;transition:.15s}
+.dropzone.over,.dropzone:hover{border-color:var(--hivis);background:#fff}
+.dropzone-mark{font:800 34px/1 var(--sans);color:var(--hivis)}
+.dropzone-text{font:600 13px/1 var(--mono);letter-spacing:.06em;color:var(--muted)}
+.import-hint,.err-msg{font-size:14px;line-height:1.5;color:var(--muted);margin:18px 0 0}
+.err-msg{color:var(--ink-2)}
+
+/* topbar */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--ink);color:#fff;margin:0 -16px;padding:12px 16px;position:sticky;top:0;z-index:5}
+.topbar-left{display:flex;align-items:center;gap:9px;cursor:pointer}
+.topbar-icon{width:28px;height:28px;display:block}
+.gate-icon{display:block;width:76px;height:76px;margin:0 0 16px}
+.gate-brand{font:800 20px/1 var(--sans);letter-spacing:.06em;margin:0 0 20px;color:var(--ink)}
+.import-back{margin:0 0 20px}
+.brand{font:800 18px/1 var(--sans);letter-spacing:.06em}
+.rev{font:600 11px/1 var(--mono);color:var(--hivis);letter-spacing:.05em}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.prog-name{font:600 13px/1.2 var(--mono);color:#c9d2d8;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* headline — the signature */
+.headline{margin:18px 0;padding:22px 22px 18px;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--hivis)}
+.headline-stale{border-left-color:var(--red)}
+.headline-main{font-size:22px;line-height:1.3;letter-spacing:-.005em}
+.headline-main strong{font-weight:800}
+.hl-accent{color:var(--steel);font-weight:700}
+.hl-tight{color:var(--red)}
+.headline-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:flex;flex-direction:column;gap:2px;padding:7px 11px;background:var(--paper);border:1px solid var(--line);border-radius:2px}
+.chip-label{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chip-val{font:600 13px/1.2 var(--mono);color:var(--ink)}
+.chip-warn{border-color:var(--amber);background:rgba(232,163,61,.1)}
+.stale-note{margin-top:12px;font-size:13px;line-height:1.45;color:var(--red);font-weight:600}
+
+/* bands */
+.bands{display:flex;gap:6px;margin:6px 0 14px}
+.band{flex:1;min-height:46px;background:var(--surface);border:1px solid var(--line);border-radius:2px;font:700 15px/1 var(--mono);letter-spacing:.04em;color:var(--muted)}
+.band-on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* look-ahead rows */
+.look-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 10px}
+.look-title{font:600 13px/1.3 var(--mono);letter-spacing:.03em;color:var(--muted);flex:1;min-width:160px}
+.look-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rows{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line)}
+.row-driving{border-left-color:var(--red);background:#fdf4f3}
+.cell{padding:12px 14px;display:flex;flex-direction:column;justify-content:center}
+.cell-float{min-width:92px;align-items:flex-start;border-right:1px solid var(--line);background:rgba(43,76,111,.04)}
+.float-num{font:700 22px/1 var(--mono);color:var(--steel)}
+.float-unit{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.cell-act{flex:1;gap:4px}
+.act-name{font-size:15px;line-height:1.25}
+.act-id{font:700 13px/1 var(--mono);color:var(--ink);background:var(--paper);border:1px solid var(--line);padding:2px 5px;border-radius:2px;margin-right:2px}
+.act-held{font:600 12px/1 var(--mono);color:var(--steel)}
+.cell-act-btn{flex:1;gap:4px;text-align:left;background:transparent;border:none;border-right:1px solid var(--line);cursor:pointer;font-family:var(--sans);color:inherit;min-height:48px}
+.cell-act-btn:hover{background:rgba(43,76,111,.06)}
+.cell-act-btn.is-open{background:rgba(43,76,111,.08)}
+.cell-flag{justify-content:center}
+.driving-tag{display:inline-block;font:800 9px/1 var(--mono);letter-spacing:.1em;color:#fff;background:var(--red);padding:3px 6px;border-radius:2px;margin-left:8px;vertical-align:middle}
+.dropped-tag{display:inline-block;font:800 9px/1 var(--mono);letter-spacing:.1em;color:var(--muted);background:var(--paper);border:1px solid var(--line);padding:3px 6px;border-radius:2px;margin-left:8px;vertical-align:middle}
+.row-dropped{opacity:.52}
+.row-dropped .act-name{text-decoration:line-through;text-decoration-color:var(--muted)}
+.cell-drop{min-width:78px;align-items:center;justify-content:center;background:transparent;border-left:1px solid var(--line);padding:8px 6px}
+.btn-drop{min-height:36px;padding:0 12px;background:#fff;border:1px solid var(--ink);border-radius:2px;font:800 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);cursor:pointer}
+.btn-drop:hover{background:var(--ink);color:#fff}
+.btn-drop.on{background:var(--steel);color:#fff;border-color:var(--steel)}
+.empty{padding:26px;text-align:center;color:var(--muted);font-size:14px;background:var(--surface);border:1px dashed var(--line)}
+/* make-ready light + considerations (separate axis from criticality) */
+.lite-frame{font-size:12px;line-height:1.5;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--steel);padding:10px 12px;margin-bottom:10px}
+.cell-light{min-width:66px;align-items:center;justify-content:center;background:transparent;border-left:1px solid var(--line);cursor:pointer}
+.lite{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.15)}
+.lite-green{background:var(--green)} .lite-amber{background:var(--amber)} .lite-red{background:var(--red)}
+.row-note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--steel);padding:14px 16px}
+.note-green{border-left-color:var(--green)} .note-amber{border-left-color:var(--amber)} .note-red{border-left-color:var(--red)}
+.note-head{font:800 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:7px}
+.note-green .note-head{color:var(--green)} .note-amber .note-head{color:var(--amber)} .note-red .note-head{color:var(--red)}
+.note-body{font-size:14px;line-height:1.5;color:var(--ink-2);margin:0 0 12px}
+.note-ticks{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.note-foot{font:700 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+
+/* make-ready */
+.mready{margin-top:26px}
+.mready-title{font:800 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding-bottom:8px;border-bottom:2px solid var(--ink);margin-bottom:6px}
+.mready-note{font-size:13px;line-height:1.45;color:var(--muted);margin:8px 0 14px}
+.mr-card{background:var(--surface);border:1px solid var(--line);padding:12px 14px;margin-bottom:8px}
+.mr-top{display:flex;align-items:center;gap:12px}
+.mr-light{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 2px rgba(0,0,0,.12)}
+.mr-green{background:var(--green)} .mr-amber{background:var(--amber)} .mr-red{background:var(--red)}
+.mr-lab{flex:1}
+.mr-name{font-size:15px;line-height:1.25}
+.mr-sub{font:600 12px/1.3 var(--mono);color:var(--muted);margin-top:2px}
+.mr-ticks{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+.tick{min-height:36px;padding:0 12px;background:var(--paper);border:1px solid var(--line);border-radius:2px;font:600 12px/1 var(--mono);color:var(--muted)}
+.tick-on{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* self-test */
+.import-st{background:transparent;color:var(--muted);border:1px solid var(--line);min-height:42px;margin-top:18px}
+.st-overlay{position:fixed;inset:0;background:rgba(28,33,38,.62);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.st-card{max-width:520px;width:100%;background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--green);padding:26px;max-height:86vh;overflow:auto}
+.st-fail{border-top-color:var(--red)}
+.st-eyebrow{font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.st-fail .st-eyebrow{color:var(--red)}
+.st-score{font:800 30px/1.1 var(--mono);margin:8px 0 18px}
+.st-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+.st-row{display:flex;gap:10px;align-items:baseline;font-size:14px;line-height:1.35}
+.st-mark{font:800 15px/1 var(--mono);flex:none} .st-p{color:var(--green)} .st-f{color:var(--red)}
+.st-name{color:var(--ink-2)}
+.st-note{font-size:13px;line-height:1.45;color:var(--muted);padding:12px 14px;background:var(--paper);border-left:3px solid var(--green);margin-bottom:18px}
+.st-fail .st-note{border-left-color:var(--red);color:var(--red);font-weight:600}
+/* sketch-pad */
+.sketch-back{margin:0 0 14px}
+
+.sk-place-first{font:600 12px var(--mono);color:var(--steel)}
+
+.sketch-fp{font:600 11px/1.5 var(--mono);color:var(--muted);word-break:break-all;background:var(--paper);border-left:3px solid var(--green);padding:9px 12px;margin:0 0 14px}
+
+.sketch-sub-in{width:100%;padding:11px 16px;font:600 14px/1.2 var(--sans);border:1px solid var(--line);border-radius:2px;margin:0 0 12px;background:#fff;color:var(--ink-2)}
+.sketch-meta{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.sketch-pb{flex:1;min-width:160px;padding:11px 14px;font-size:14px;border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink)}
+.sketch-sd{padding:10px 12px;font:600 13px var(--mono);border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink)}
+.sketch-keylink{background:transparent;border:none;color:var(--steel);font:600 12px var(--mono);text-decoration:underline;padding:0 0 14px;cursor:pointer;text-align:left;display:block}
+.sk-colours{display:flex;gap:4px}
+.sk-swatch{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sk-swatch-on{box-shadow:0 0 0 2px var(--ink)}
+.ck-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dotted var(--line)}
+.ck-dot{width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.ck-lab{font-size:14px;color:var(--ink-2)}
+.sketch-foot{display:flex;justify-content:flex-end;gap:14px;margin:2px 0 14px;flex-wrap:wrap}
+.sketch-foot-by{font:600 11px var(--mono);color:var(--ink-2)}
+.sketch-foot-fp{font:600 11px var(--mono);color:var(--muted)}
+.sk-print-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:16px}
+.sk-print-icon{width:52px;height:52px;flex:none}
+.sk-print-titles{flex:1;min-width:0}
+.sk-print-title{font:800 20px/1.1 var(--sans)}
+.sk-print-subtitle{font:600 14px/1.2 var(--sans);color:var(--ink-2);margin-top:3px}
+.sk-print-sub{font:600 11px/1.4 var(--mono);color:var(--muted);margin-top:6px}
+.sk-print-foot{display:flex;justify-content:flex-end;gap:16px;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);flex-wrap:wrap}
+.sk-print-by{font:700 11px var(--mono);color:var(--ink-2)}
+.sk-print-fp{font:600 10px var(--mono);color:var(--muted);word-break:break-all}
+.currency-chase{display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.chase-note{flex:1;min-width:180px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.chase-btn{background:var(--steel);color:#fff;min-height:42px;font-size:13px}
+.supplier-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:8px 0 16px}
+.supplier-btn{min-height:58px;padding:0 14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--hivis);border-radius:2px;font:700 14px/1.2 var(--sans);color:var(--ink);text-align:left;cursor:pointer}
+.supplier-btn:hover{background:#fff;border-left-color:var(--steel)}
+.supplier-custom{display:flex;gap:8px;margin-bottom:18px}
+.supplier-in{flex:1;padding:12px 14px;font-size:14px;border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink)}
+.supplier-go{background:var(--steel);color:#fff;min-height:46px}
+.supplier-disclaimer{font-size:12.5px;line-height:1.5;color:var(--muted);background:var(--paper);border-left:3px solid var(--red);padding:12px 14px}
+@media (min-width:620px){ .supplier-grid{grid-template-columns:repeat(3,1fr)} }
+/* laptops + Surface: use the width, keep every target touch-sized */
+@media (min-width:920px){
+  #app{max-width:1120px;padding:0 32px 84px}
+  .topbar{margin:0 -32px;padding:14px 32px}
+  .headline{padding:26px 30px 22px}
+  .headline-main{font-size:24px}
+  .row{align-items:center}
+  .cell{padding:15px 20px}
+  .cell-float{min-width:116px}
+  .float-num{font-size:24px}
+  .cell-act{padding-left:22px}
+  .act-name{font-size:16px}
+  .cell-light{min-width:92px}
+  .cell-drop{min-width:88px}
+  .lite{width:20px;height:20px}
+  .band{min-height:50px;font-size:16px}
+  .look-head{margin-bottom:12px}
+  .gate,.import{padding:40px 44px}
+}
+@media (min-width:1240px){ #app{max-width:1200px} }
+@media (max-width:560px){
+  .headline-main{font-size:18px}
+  .row{flex-wrap:wrap} .cell-float{min-width:0;width:100%;flex-direction:row;gap:6px;align-items:baseline;border-right:none;border-bottom:1px solid var(--line)}
+  .prog-name{max-width:30vw}
+}
+/* issue list (print / share to the men) */
+.look-issue{background:transparent;color:var(--steel);border:1px solid var(--steel);min-height:38px;font-size:13px;font-weight:700}
+.issue-overlay{position:fixed;inset:0;background:rgba(28,33,38,.62);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow:auto;z-index:60}
+.issue-sheet{max-width:720px;width:100%;background:#fff;border:1px solid var(--line);padding:30px;margin:10px 0 40px}
+.issue-head{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:18px}
+.issue-cap{font:600 12px/1.5 var(--mono);color:var(--muted);background:var(--paper);border-left:3px solid var(--steel);padding:9px 12px;margin-bottom:16px}
+.issue-title{font:800 19px/1.1 var(--sans);letter-spacing:.04em}
+.issue-sub{font:600 12px/1.5 var(--mono);color:var(--muted);margin-top:6px}
+.issue-week{margin-bottom:18px}
+.issue-week-label{font:700 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--steel);padding:6px 0;border-bottom:1px solid var(--line);margin-bottom:8px}
+.issue-line{display:grid;grid-template-columns:54px 1fr auto;gap:3px 12px;padding:9px 0;border-bottom:1px dotted var(--line);align-items:baseline}
+.il-date{grid-row:1;grid-column:1;font:700 12px/1.3 var(--mono);color:var(--ink)}
+.il-main{grid-row:1;grid-column:2;font-size:14px;line-height:1.3}
+.il-id{font:700 12px/1 var(--mono);background:var(--paper);border:1px solid var(--line);padding:1px 4px;border-radius:2px}
+.il-crit{font:800 10px/1 var(--mono);color:var(--red);letter-spacing:.06em}
+.il-float{grid-row:1;grid-column:3;font:600 11px/1 var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
+.il-status{grid-row:2;grid-column:2;font:600 12px/1.4 var(--mono);color:var(--ink-2)}
+.il-held{grid-row:3;grid-column:2;font:600 11px/1 var(--mono);color:var(--steel)}
+.issue-driving .il-id{color:var(--red);border-color:var(--red)}
+.issue-frame{margin-top:20px;padding-top:14px;border-top:2px solid var(--ink);font-size:11px;line-height:1.55;color:var(--muted)}
+.issue-bar{display:flex;gap:8px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap}
+.issue-bar .btn-ghost{color:var(--ink);border-color:var(--line)}
+/* chase list — bespoke notes cards */
+.chase-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--steel);padding:14px 16px;margin-bottom:12px}
+.chase-card.chase-blocked{border-left-color:var(--red)}
+.chase-card.chase-critical{border-left-color:var(--red)}
+.chase-card.chase-gating{border-left-color:var(--amber)}
+.chase-card.chase-custom{border-left-color:var(--hivis)}
+.chase-top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.chase-id{font:700 13px/1 var(--mono);background:var(--paper);border:1px solid var(--line);padding:3px 6px;border-radius:2px}
+.chase-name{font-size:15px;font-weight:700;color:var(--ink);flex:1;min-width:140px}
+.chase-meta{font:600 12px/1.4 var(--mono);color:var(--muted);margin-bottom:4px}
+.chase-items{font:600 13px/1.45 var(--mono);color:var(--ink-2);margin:6px 0 10px;padding:8px 10px;background:var(--paper);border-left:3px solid var(--amber)}
+.chase-lab{font:800 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.chase-action{margin-top:10px;padding:12px 14px;border-radius:2px;border:1px solid rgba(192,57,43,.28);background:rgba(192,57,43,.08);transition:background .15s,border-color .15s}
+.chase-action.is-done{border-color:rgba(39,174,96,.45);background:rgba(39,174,96,.12)}
+.chase-status{font:800 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.chase-status.open{color:var(--red)}
+.chase-status.done{color:var(--green)}
+.chase-when{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.chase-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:2px;background:#fff;font:600 12px/1 var(--mono);color:var(--ink-2);cursor:pointer;user-select:none}
+.chase-chip input{margin:0;accent-color:var(--steel)}
+.chase-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chase-chip.urgent.on{background:var(--red);border-color:var(--red);color:#fff}
+.chase-notes{width:100%;min-height:56px;padding:10px 12px;font:400 14px/1.45 var(--sans);border:1px solid rgba(192,57,43,.28);border-radius:2px;background:#fff;color:var(--ink);resize:vertical}
+.chase-action.is-done .chase-notes{border-color:rgba(39,174,96,.4)}
+.chase-notes:focus{outline:2px solid var(--steel);outline-offset:1px}
+.chase-done-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08)}
+.chase-done-lab{display:inline-flex;align-items:center;gap:8px;font:700 13px/1 var(--mono);color:var(--ink);cursor:pointer}
+.chase-done-lab input{width:18px;height:18px;accent-color:var(--green)}
+.chase-card.is-done{opacity:.78;border-left-color:var(--green)}.chase-card.is-done .chase-name{text-decoration:line-through;color:var(--muted)}
+.chase-card-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
+.chase-add{background:var(--paper);border:1px dashed var(--line);padding:16px;margin:16px 0}
+.chase-add-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chase-add-in{flex:1;min-width:140px;padding:10px 12px;font-size:14px;border:1px solid var(--line);border-radius:2px;background:#fff}
+/* help */
+.help-h{font:800 13px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.help-p{font-size:14px;line-height:1.6;color:var(--ink-2);margin:0 0 12px}
+.help-p.blunt{font-weight:600;color:var(--ink)}
+.help-list{margin:0 0 8px;padding:0;list-style:none}
+.help-list li{font-size:14px;line-height:1.55;color:var(--ink-2);padding:9px 0 9px 22px;position:relative;border-bottom:1px dotted var(--line)}
+.help-list li::before{content:"\2192";position:absolute;left:0;color:var(--steel);font-weight:700}
+.gate-help,.import-help{background:transparent;color:var(--muted);border:1px solid var(--line);min-height:42px;margin-top:12px}
+/* sketch-pad */
+.sketch{max-width:760px;margin:0 auto}
+.sketch-top{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.sketch-icon{width:40px;height:40px}
+.sketch-h{font-size:26px;margin:6px 0 12px}
+.sketch-note{font-size:14px;line-height:1.55;color:var(--muted);background:var(--surface);border-left:3px solid var(--steel);padding:12px 14px;margin-bottom:18px}
+.sketch-title{width:100%;min-height:50px;padding:0 16px;font:700 17px/1 var(--sans);border:1px solid var(--line);background:#fff;margin-bottom:14px;border-radius:2px}
+.sketch-editor{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.sketch-row{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);padding:10px 12px;flex-wrap:wrap}
+.sk-name{flex:1;min-width:120px;min-height:44px;padding:0 12px;font-size:15px;border:1px solid var(--line);background:#fff;border-radius:2px}
+.sk-len{width:60px;min-height:44px;padding:0 8px;font:700 15px/1 var(--mono);border:1px solid var(--line);background:#fff;text-align:center;border-radius:2px}
+.sk-unit{font:600 12px/1 var(--mono);color:var(--muted)}
+.sk-place{min-height:44px;padding:0 8px;font-size:13px;border:1px solid var(--line);background:#fff;border-radius:2px}
+.sk-first{font:600 12px/1 var(--mono);color:var(--muted);padding:0 6px}
+.sk-del{width:38px;min-height:38px;background:transparent;border:1px solid var(--line);color:var(--red);font:700 18px/1 var(--sans);border-radius:2px;cursor:pointer}
+.sketch-add{background:var(--ink);color:#fff;min-height:46px;margin-bottom:18px}
+.sketch-max{font:600 13px/1.4 var(--mono);color:var(--muted);margin-bottom:18px}
+.sketch-chart{background:#fff;border:1px solid var(--line);border-radius:2px;margin-bottom:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 1px 0 rgba(28,33,38,.04)}
+.sketch-chart svg{display:block}
+.sketch-sheet{max-width:980px}
+.sketch-sheet .sketch-chart{overflow:visible;border:none;box-shadow:none}
+.sketch-sheet .sketch-chart svg{width:100%;height:auto;max-width:100%}
+@media print{.sketch-chart{overflow:visible;border:none;box-shadow:none}.sketch-chart svg{width:100%;height:auto}}
+.sketch-empty{color:var(--muted);font-size:14px;text-align:center;padding:28px 16px}
+.sketch-saved-h{font:800 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--steel);margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.sketch-saved-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.sketch-saved-open{flex:1;text-align:left;background:var(--surface);border:1px solid var(--line);min-height:44px;padding:0 14px;font:600 14px/1 var(--sans);cursor:pointer;border-radius:2px}
+.issue-fp{margin-top:12px;font:600 10px/1.5 var(--mono);color:var(--muted);word-break:break-all;background:var(--paper);padding:8px 10px;border:1px solid var(--line)}
+@media print{
+  body{background:#fff} body::before{display:none}
+  #app>*:not(.issue-overlay){display:none !important}
+  .issue-overlay{position:static !important;background:#fff !important;padding:0 !important;display:block !important;overflow:visible !important}
+  .issue-sheet{border:none !important;max-width:none;margin:0;padding:0}
+  .issue-bar,.topbar,.bands,.btn{display:none !important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>window.__AMELIE_LOAD_ISSUES=[];</script>
+<script>
+/* ---- src/core__registry.js ---- */
+/* ===== EMBEDDED VERBATIM: core/registry.js (sha256 f414cac42d40ab4b…) ===== */
+try {
+/* AMELIE·AI PRO-PLUS — registry.js
+ * A small, deliberate module registry — the concrete answer to "leave open ends to connect new
+ * modules if you think of something else later on."
+ *
+ * Every engine/feature module in this project (cpm, calendar, materials, scanner, lookahead,
+ * commands, narrator) registers itself here under a stable name, instead of the app reaching
+ * for scattered global variables to find them. A future module (resource leveling, longest
+ * path, a P6-XER importer, anything not yet built) registers itself the same way and is
+ * immediately discoverable and wireable by everything else — nothing about this registry, or
+ * about any existing module, needs to change to add one.
+ *
+ * This is intentionally NOT a dependency-injection framework or a plugin marketplace — just a
+ * single, obvious place every module is found, with two safety guarantees:
+ *  - registering the same name twice is refused (a copy-paste mistake should fail loudly, not
+ *    silently shadow the original module partway through the app's life);
+ *  - asking for a module that was never registered is refused, not returned as undefined,
+ *    so a caller finds out immediately that a dependency is missing rather than getting a
+ *    confusing crash three calls further down the line.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_REGISTRY = factory();
+})(typeof window !== 'undefined' ? window : this, function () {
+  'use strict';
+
+  var modules = {};
+
+  function fail(msg) { throw new Error('registry.js: ' + msg); }
+
+  function register(name, mod, meta) {
+    if (!name || typeof name !== 'string') fail('register() requires a string name');
+    if (modules[name]) fail('a module named "' + name + '" is already registered \u2014 refusing to silently overwrite it');
+    modules[name] = { name: name, module: mod, meta: meta || {}, registeredAt: new Date().toISOString() };
+    return true;
+  }
+
+  function get(name) {
+    if (!modules[name]) fail('no module named "' + name + '" is registered. Registered modules: ' + Object.keys(modules).join(', ') || '(none yet)');
+    return modules[name].module;
+  }
+
+  function has(name) { return !!modules[name]; }
+
+  function list() {
+    return Object.keys(modules).map(function (n) { return { name: n, meta: modules[n].meta, registeredAt: modules[n].registeredAt }; });
+  }
+
+  // For tests only \u2014 real app code should never need to unregister anything.
+  function _reset() { modules = {}; }
+
+  return { register: register, get: get, has: has, list: list, _reset: _reset };
+});
+
+} catch (e) { window.__AMELIE_LOAD_ISSUES.push({ module: "core/registry.js", message: e.message }); }
+</script>
+<script>
+/* ---- src/core__contracts.js ---- */
+/* ===== EMBEDDED VERBATIM: core/contracts.js (sha256 7605023273bd428c…) ===== */
+try {
+/* AMELIE·AI PRO-PLUS — contracts.js
+ * The module handshake system. registry.js (already built) answers "where do I find module X
+ * by name" — this answers the harder question: "given everything currently registered, what
+ * order must they run in, and can a NEW module slot in without anyone else being rewired."
+ *
+ * Every module registers a CONTRACT alongside itself:
+ *   { provides: ['cpmResult'], requires: ['rawProject'] }
+ * "provides" names the SLOT(S) in the canonical Project Data Model (see model.js) this module
+ * writes its output into. "requires" names the slot(s) it needs to already be populated before
+ * it can run. Nothing here says how a module does its work — only what data it needs and what
+ * data it produces, which is exactly enough information to compute a valid run order
+ * automatically, the same way cpm.js computes a valid activity sequence from predecessor/
+ * successor declarations rather than a hardcoded list — deliberately the same pattern, applied
+ * one layer up, to modules instead of activities.
+ *
+ * THE "NO DUPLICATION" RULE THIS ENFORCES: two modules are not permitted to declare the same
+ * "provides" slot. If ARCHIE's scanner and some future module both tried to write
+ * "scanResult", that's exactly the kind of duplicated, ambiguous computation Tony explicitly
+ * ruled out — registerContract() refuses it outright, the same way registry.js refuses a
+ * duplicate module name.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_CONTRACTS = factory();
+})(typeof window !== 'undefined' ? window : this, function () {
+  'use strict';
+
+  var contracts = {}; // moduleName -> { provides: [...], requires: [...] }
+  var providedBy = {}; // slotName -> moduleName (enforces the no-duplication rule)
+
+  function fail(msg) { throw new Error('contracts.js: ' + msg); }
+
+  function registerContract(moduleName, contract) {
+    if (!moduleName) fail('registerContract() requires a module name');
+    if (contracts[moduleName]) fail('module "' + moduleName + '" already has a registered contract \u2014 refusing to overwrite it');
+    var provides = contract.provides || [];
+    var requires = contract.requires || [];
+    if (!Array.isArray(provides) || !Array.isArray(requires)) fail('provides/requires must be arrays of slot names');
+
+    provides.forEach(function (slot) {
+      if (providedBy[slot]) {
+        fail('slot "' + slot + '" is already provided by module "' + providedBy[slot] + '" \u2014 module "' + moduleName +
+          '" cannot ALSO provide it. Two modules computing the same data is exactly the duplication that is not permitted; ' +
+          'the second module should REQUIRE the slot from the first, not recompute it.');
+      }
+    });
+    provides.forEach(function (slot) { providedBy[slot] = moduleName; });
+    contracts[moduleName] = { provides: provides.slice(), requires: requires.slice() };
+    return true;
+  }
+
+  function getContract(moduleName) {
+    if (!contracts[moduleName]) fail('no contract registered for module "' + moduleName + '"');
+    return contracts[moduleName];
+  }
+
+  // Which slot does a given module use to get its data, and who provides it? Lets a NEW module
+  // discover, by name alone, which existing module it should declare as a dependency — this is
+  // the concrete "handshake" mechanism: a future module says "I require rawProject and
+  // cpmResult" without needing to know or care that cpm.js is the thing that currently produces
+  // cpmResult, or how it does it.
+  function whoProvides(slotName) {
+    return providedBy[slotName] || null;
+  }
+
+  // Topological sort of registered modules by their requires/provides — the SAME algorithm
+  // shape as cpm.js's topoOrder (Kahn's algorithm), deliberately: a pipeline of modules is
+  // structurally the same problem as a network of activities, just one layer up. Detects an
+  // unsatisfiable dependency (a module requiring a slot nobody provides) and a genuine cycle,
+  // and reports both explicitly rather than silently running modules in registration order.
+  function resolveOrder(moduleNames) {
+    moduleNames = moduleNames || Object.keys(contracts);
+    var inDegree = {}, dependents = {};
+    moduleNames.forEach(function (m) { inDegree[m] = 0; dependents[m] = []; });
+
+    moduleNames.forEach(function (m) {
+      var c = getContract(m);
+      c.requires.forEach(function (slot) {
+        var producer = providedBy[slot];
+        if (!producer) fail('module "' + m + '" requires slot "' + slot + '" but no registered module provides it');
+        if (moduleNames.indexOf(producer) === -1) fail('module "' + m + '" requires slot "' + slot + '" (provided by "' + producer + '") but that module is not in this run set');
+        dependents[producer].push(m);
+        inDegree[m]++;
+      });
+    });
+
+    var queue = moduleNames.filter(function (m) { return inDegree[m] === 0; });
+    var order = [];
+    while (queue.length) {
+      var m = queue.shift();
+      order.push(m);
+      dependents[m].forEach(function (dep) {
+        inDegree[dep]--;
+        if (inDegree[dep] === 0) queue.push(dep);
+      });
+    }
+    if (order.length !== moduleNames.length) {
+      var stuck = moduleNames.filter(function (m) { return order.indexOf(m) === -1; });
+      fail('module dependency graph has a cycle \u2014 could not resolve a run order. Stuck: ' + stuck.join(', '));
+    }
+    return order;
+  }
+
+  function _reset() { contracts = {}; providedBy = {}; }
+
+  return { registerContract: registerContract, getContract: getContract, whoProvides: whoProvides, resolveOrder: resolveOrder, _reset: _reset };
+});
+
+} catch (e) { window.__AMELIE_LOAD_ISSUES.push({ module: "core/contracts.js", message: e.message }); }
+</script>
+<script>
+/* ---- src/features__xerimport.js ---- */
+/* ===== EMBEDDED VERBATIM: features/xerimport.js (sha256 39aae79ed3509fca…) ===== */
+try {
+/* AMELIE·AI PRO-PLUS — xerimport.js
+ * Native Primavera P6 .xer import — the second of the three import paths (P6 XER, CSV,
+ * scan/OCR). Two layers, kept deliberately separate:
+ *   1. readXER(text)   — a generic, format-faithful reader. Reads every table, drops nothing,
+ *      makes no assumption about which fields matter. Pure format parsing.
+ *   2. buildSchedule(parsed) — the domain mapping layer on top: turns the generic tables into
+ *      the exact shape AMELIE·AI PRO-PLUS's own CPM engine (engine/cpm.js) expects. New P6
+ *      fields or tables slot into this layer without touching the reader.
+ *
+ * XER structure (Oracle Primavera P6 export, tab-delimited text):
+ *   ERMHDR\t<version>\t<date>\t...    -> file header
+ *   %T\t<TABLE_NAME>                   -> start of a table
+ *   %F\t<field1>\t<field2>...          -> field names for that table
+ *   %R\t<value1>\t<value2>...          -> one record row
+ *   %E                                 -> end of table
+ * Encoding is Windows-1252 (a real, common P6 export gotcha — reading as plain UTF-8 corrupts
+ * currency symbols and accented characters in project/activity names).
+ *
+ * A `__proto__`-named column is a genuine, real hazard: field names come straight from raw file
+ * text with zero schema validation, and building a plain `{}` row object means a column
+ * literally named `__proto__` silently vanishes from every row (Object.prototype absorbs the
+ * assignment instead of setting an own property) — a real data-integrity gap at the most
+ * foundational layer, not a hypothetical one. Every row object here is built with
+ * `Object.create(null)`, which has no prototype at all, so this can't happen — verified by test
+ * with a file that deliberately contains that exact column name.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_XERIMPORT = factory();
+})(typeof window !== 'undefined' ? window : this, function () {
+  'use strict';
+
+  function fail(msg) { throw new Error('xerimport.js: ' + msg); }
+
+  // ---- Layer 1: generic reader --------------------------------------------------------------
+  function readXER(text) {
+    if (typeof text !== 'string' || text.trim() === '') {
+      fail('not a readable .xer file — the input was empty or not text. Re-export from Primavera P6 as an .xer file.');
+    }
+    var lines = text.split(/\r?\n/);
+    var tables = {}, order = [], header = null, cur = null, anomalies = [];
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line === '') continue;
+      var tok = line.split('\t');
+      var tag = tok[0];
+
+      if (tag === 'ERMHDR') {
+        var f = tok.slice(1);
+        header = { raw: f, version: f[0] || null, exportDate: f[1] || null, exportUser: f[3] || null, baseCurrency: f[7] || null };
+      } else if (tag === '%T') {
+        cur = tok[1];
+        if (!tables[cur]) { tables[cur] = { name: cur, fields: [], rows: [] }; order.push(cur); }
+      } else if (tag === '%F') {
+        if (cur) tables[cur].fields = tok.slice(1);
+      } else if (tag === '%R') {
+        if (!cur) continue;
+        var vals = tok.slice(1);
+        var fields = tables[cur].fields;
+        if (vals.length !== fields.length) anomalies.push({ table: cur, line: i + 1, expected: fields.length, got: vals.length });
+        var rec = Object.create(null); // never a plain {} — see file header on the __proto__ hazard
+        for (var c = 0; c < fields.length; c++) rec[fields[c]] = vals[c] !== undefined ? vals[c] : null;
+        tables[cur].rows.push(rec);
+      } else if (tag === '%E') {
+        cur = null;
+      }
+      // any other tag is ignored — forward-compatible, unknown lines never crash the reader
+    }
+    return { header: header, tables: tables, order: order, anomalies: anomalies };
+  }
+
+  function importReport(parsed, sourceFileName) {
+    var manifest = parsed.order.map(function (name) {
+      return { table: name, rows: parsed.tables[name].rows.length, fields: parsed.tables[name].fields.length };
+    });
+    var totalRows = manifest.reduce(function (s, t) { return s + t.rows; }, 0);
+    return {
+      sourceFile: sourceFileName || null,
+      readComplete: parsed.anomalies.length === 0,
+      exportVersion: parsed.header && parsed.header.version,
+      exportDate: parsed.header && parsed.header.exportDate,
+      tableCount: parsed.order.length, totalRows: totalRows,
+      manifest: manifest, anomalies: parsed.anomalies
+    };
+  }
+
+  // ---- Layer 2: domain mapping ----------------------------------------------------------------
+  var HR = function (v) { return (v === '' || v == null) ? null : Number(v); };
+  var LINK_TYPE = { PR_FS: 'FS', PR_SS: 'SS', PR_FF: 'FF', PR_SF: 'SF' };
+  var MILESTONE_TYPES = { TT_Mile: true, TT_FinMile: true, TT_StartMile: true };
+  var P6_EPOCH = Date.UTC(1899, 11, 30);
+  var serialToISO = function (s) { return new Date(P6_EPOCH + Number(s) * 86400000).toISOString().slice(0, 10); };
+
+  // P6's calendar working-time blob is a nested-parenthesis mini-language:
+  // DaysOfWeek()(0||1()(s|08:00)(f|17:00))...  Exceptions()((d|45678)(s|08:00)(f|12:00))...
+  // Extract {start,finish} minute-of-day pairs from a fragment of that blob.
+  function extractPeriods(text) {
+    var re = /([sf])\|(\d{1,2}):(\d{2})/g, m, toks = [];
+    while ((m = re.exec(text))) toks.push({ kind: m[1], min: (+m[2]) * 60 + (+m[3]) });
+    var periods = [];
+    for (var k = 0; k + 1 < toks.length; k += 2) {
+      var a = toks[k], b = toks[k + 1];
+      periods.push({ start: a.kind === 's' ? a.min : b.min, finish: a.kind === 'f' ? a.min : b.min });
+    }
+    return periods;
+  }
+  function periodHours(periods) {
+    return periods.reduce(function (s, p) { var e = p.finish; if (e <= p.start) e += 1440; return s + (e - p.start) / 60; }, 0);
+  }
+  function exceptionEntries(blob) {
+    var i = blob.indexOf('Exceptions()');
+    if (i < 0) return [];
+    i += 'Exceptions()'.length;
+    while (i < blob.length && blob[i] !== '(') i++;
+    var entries = [], depth = 0, start = -1;
+    for (; i < blob.length; i++) {
+      var ch = blob[i];
+      if (ch === '(') { depth++; if (depth === 2 && start < 0) start = i; }
+      else if (ch === ')') { if (depth === 2 && start >= 0) { entries.push(blob.slice(start, i + 1)); start = -1; } depth--; if (depth === 0) break; }
+    }
+    return entries;
+  }
+
+  // Parses the P6 blob into { hoursPerP6Day: {1..7 -> hours}, holidays: [iso...] }. P6 day
+  // numbering is 1=Sunday..7=Saturday — converted to AMELIE's own Monday-first workDays array
+  // by the caller (buildCalendars below), not here, so this function's output is verifiably
+  // just "what P6 said," independent of any indexing convention choice made later.
+  function parseCalendarBlob(blob) {
+    var out = { hoursPerP6Day: {}, holidays: [] };
+    for (var d = 1; d <= 7; d++) out.hoursPerP6Day[d] = 0;
+    if (typeof blob !== 'string' || !blob) return out;
+
+    var dowStart = blob.indexOf('DaysOfWeek()');
+    var excStart = blob.indexOf('Exceptions()');
+    var dowRegion = dowStart >= 0 ? blob.slice(dowStart, excStart >= 0 ? excStart : undefined) : '';
+    for (var day = 1; day <= 7; day++) {
+      var marker = '(0||' + day + '()';
+      var i = dowRegion.indexOf(marker);
+      if (i < 0) continue;
+      var end = dowRegion.length;
+      for (var n = day + 1; n <= 7; n++) {
+        var j = dowRegion.indexOf('(0||' + n + '()', i + marker.length);
+        if (j >= 0) { end = j; break; }
+      }
+      out.hoursPerP6Day[day] = periodHours(extractPeriods(dowRegion.slice(i, end)));
+    }
+    exceptionEntries(blob).forEach(function (entry) {
+      var sm = /d\|(\d+)/.exec(entry);
+      if (!sm) return;
+      var iso = serialToISO(sm[1]);
+      var periods = extractPeriods(entry);
+      if (!periods.length) out.holidays.push(iso); // no work periods in this exception = a holiday/closure
+      // A WORKING exception (an off-day worked, or a normal day with different hours) is a real
+      // P6 feature but AMELIE's own calendar.js has no per-date-override concept yet (only a
+      // fixed weekly pattern + a holiday list) — flagged honestly rather than silently dropped;
+      // see buildCalendars' warnings output.
+    });
+    return out;
+  }
+
+  // Converts P6's 1=Sunday..7=Saturday convention into AMELIE calendar.js's own
+  // [Mon,Tue,Wed,Thu,Fri,Sat,Sun] workDays array — this specific index mapping is the one place
+  // a mistake would silently shift every calendar in an imported file by a day, so it is
+  // isolated in one small function and covered directly by test with a known P6 blob.
+  function p6ToAmelieWorkDays(hoursPerP6Day) {
+    var P6_TO_AMELIE_INDEX = { 2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5, 1: 6 }; // P6 Mon=2..Sat=7,Sun=1 -> AMELIE Mon=0..Sun=6
+    var workDays = [false, false, false, false, false, false, false];
+    var hoursByAmelieIndex = [0, 0, 0, 0, 0, 0, 0];
+    for (var p6Day = 1; p6Day <= 7; p6Day++) {
+      var idx = P6_TO_AMELIE_INDEX[p6Day];
+      var hrs = hoursPerP6Day[p6Day] || 0;
+      workDays[idx] = hrs > 0;
+      hoursByAmelieIndex[idx] = hrs;
+    }
+    return { workDays: workDays, hoursByAmelieIndex: hoursByAmelieIndex };
+  }
+
+  function buildCalendars(rows) {
+    var calendars = {}, warnings = [];
+    rows.forEach(function (r) {
+      var parsed = parseCalendarBlob(r.clndr_data);
+      var conv = p6ToAmelieWorkDays(parsed.hoursPerP6Day);
+      var anyWork = conv.workDays.some(function (w) { return w; });
+      var hoursPerDay = HR(r.day_hr_cnt);
+
+      if (!anyWork && hoursPerDay > 0) {
+        // No usable weekly pattern in the blob, but P6 recorded a day-length — synthesise a
+        // standard Mon-Fri pattern at that day length rather than leaving the calendar
+        // unusable. Flagged plainly as representative, never presented as P6-verbatim.
+        conv.workDays = [true, true, true, true, true, false, false];
+        for (var k = 0; k < 5; k++) conv.hoursByAmelieIndex[k] = hoursPerDay;
+        warnings.push({ severity: 'missing_data', category: 'calendar', itemRef: String(r.clndr_name || r.clndr_id), description: 'No usable weekly working-time pattern was found in the file — a representative Mon-Fri, ' + hoursPerDay + 'h/day week was assumed instead. Verify against the source programme if this calendar is unusual (e.g. night shift, 6-day week).' });
+      } else if (!anyWork) {
+        warnings.push({ severity: 'missing_data', category: 'calendar', itemRef: String(r.clndr_name || r.clndr_id), description: 'Has no usable working-time data at all and no day length to fall back on — activities on this calendar cannot be scheduled until it is fixed at source.' });
+      }
+
+      calendars[r.clndr_id] = {
+        id: r.clndr_id, name: r.clndr_name || r.clndr_id,
+        workDays: conv.workDays,
+        hoursPerDay: hoursPerDay || (conv.hoursByAmelieIndex.find(function (h) { return h > 0; }) || 8),
+        holidays: parsed.holidays
+      };
+    });
+    return { calendars: calendars, warnings: warnings };
+  }
+
+  function buildActivities(rows) {
+    return rows.map(function (r) {
+      var isMilestone = !!MILESTONE_TYPES[r.task_type];
+      var durHr = HR(r.target_drtn_hr_cnt);
+      return {
+        id: r.task_id, name: (typeof stripTags === 'function' ? stripTags(r.task_name || r.task_id) : String(r.task_name || r.task_id || '')).slice(0, 240),
+        calendarId: r.clndr_id || null,
+        isMilestone: isMilestone,
+        // Converted to DAYS at import time (AMELIE's CPM engine works in whole/fractional
+        // working days, per its calendar.js design) — the calendar's own hoursPerDay is applied
+        // by the caller in buildSchedule(), since this function doesn't have the calendar
+        // lookup in scope and duration-per-calendar-hours must stay correct per activity.
+        durationHr: isMilestone ? 0 : durHr,
+        _p6Type: r.task_type || null
+      };
+    });
+  }
+
+  function buildRelationships(rows) {
+    return rows.map(function (r) {
+      return { predId: r.pred_task_id, succId: r.task_id, type: LINK_TYPE[r.pred_type] || 'FS', lagHr: HR(r.lag_hr_cnt) || 0 };
+    });
+  }
+
+  // Resources — from RSRC + RSRCRATE. RSRC gives identity (name, type, short code); RSRCRATE
+  // gives cost/unit + max units-per-time when present. Both are optional in the XER.
+  function buildResources(rsrcRows, rsrcRateRows) {
+    var byId = {};
+    (rsrcRows || []).forEach(function (r) {
+      byId[r.rsrc_id] = {
+        id: r.rsrc_id,
+        code: r.rsrc_short_name || null,
+        name: r.rsrc_name || r.rsrc_short_name || r.rsrc_id,
+        type: r.rsrc_type || null,          // RT_Labor / RT_Equip / RT_Mat / RT_Nonlab
+        parentId: r.parent_rsrc_id || null,
+        activeFlag: r.active_flag === 'Y',
+        rates: []
+      };
+    });
+    (rsrcRateRows || []).forEach(function (rr) {
+      var r = byId[rr.rsrc_id];
+      if (!r) return;
+      r.rates.push({
+        startDate: rr.start_date || null,
+        costPerQty: HR(rr.cost_per_qty),
+        maxQtyPerHr: HR(rr.max_qty_per_hr)
+      });
+    });
+    return Object.keys(byId).map(function (k) { return byId[k]; });
+  }
+
+  // WBS — from PROJWBS. Each row has wbs_id, parent_wbs_id, wbs_name/wbs_short_name, seq_num.
+  // We return both the flat list AND a materialised tree so consumers can render either way
+  // without re-computing it. `path` is the full breadcrumb string (Root / L1 / L2 / …) which is
+  // what a user actually reads in a WBS column of a schedule.
+  function buildWBS(wbsRows) {
+    var byId = {};
+    (wbsRows || []).forEach(function (r) {
+      byId[r.wbs_id] = {
+        id: r.wbs_id,
+        parentId: r.parent_wbs_id || null,
+        code: r.wbs_short_name || null,
+        name: r.wbs_name || r.wbs_short_name || r.wbs_id,
+        seq: HR(r.seq_num),
+        projectFlag: r.proj_node_flag === 'Y',
+        children: []
+      };
+    });
+    var roots = [];
+    Object.keys(byId).forEach(function (id) {
+      var node = byId[id];
+      if (node.parentId && byId[node.parentId]) byId[node.parentId].children.push(node);
+      else roots.push(node);
+    });
+    function walk(node, prefix) {
+      node.path = prefix ? prefix + ' / ' + node.name : node.name;
+      (node.children || []).sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); });
+      node.children.forEach(function (c) { walk(c, node.path); });
+    }
+    roots.sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); });
+    roots.forEach(function (r) { walk(r, ''); });
+    var flat = [];
+    Object.keys(byId).forEach(function (id) {
+      var n = byId[id];
+      flat.push({ id: n.id, parentId: n.parentId, code: n.code, name: n.name, path: n.path, projectFlag: n.projectFlag });
+    });
+    return { flat: flat, tree: roots };
+  }
+
+  // Resource assignments — TASKRSRC ties each activity to a resource with target cost, target
+  // qty and target hours. This is the raw material for AMELIE's cost S-curve and resource
+  // histograms — the earlier build silently discarded it, this build carries it verbatim.
+  function buildAssignments(assignRows) {
+    return (assignRows || []).map(function (r) {
+      return {
+        activityId: r.task_id,
+        resourceId: r.rsrc_id,
+        targetQty: HR(r.target_qty) || 0,
+        targetCost: HR(r.target_cost) || 0,
+        actualQty: HR(r.act_reg_qty) || 0,
+        actualCost: HR(r.act_reg_cost) || 0,
+        remainingQty: HR(r.remain_qty) || 0,
+        remainingCost: HR(r.remain_cost) || 0,
+      };
+    });
+  }
+
+  // The full pipeline: raw XER text -> the EXACT input shape engine/cpm.js expects
+  // ({ activities, relationships, calendars }), plus an honest report of anything that
+  // couldn't be carried across cleanly.
+  function buildSchedule(parsed) {
+    var T = function (name) { return (parsed.tables[name] ? parsed.tables[name].rows : []); };
+    var calResult = buildCalendars(T('CALENDAR'));
+    var rawActivities = buildActivities(T('TASK'));
+    var rawRelationships = buildRelationships(T('TASKPRED'));
+    var resources = buildResources(T('RSRC'), T('RSRCRATE'));
+    var wbs = buildWBS(T('PROJWBS'));
+    var assignments = buildAssignments(T('TASKRSRC'));
+    var warnings = calResult.warnings.slice();
+
+    // WBS lookup so we can tag every activity with its WBS path — enables the AON's WBS
+    // banding to use the REAL P6 WBS structure rather than deriving one from the name prefix.
+    var wbsById = {};
+    wbs.flat.forEach(function (w) { wbsById[w.id] = w; });
+
+    // resource assignments per task, for quick lookup
+    var assignsByTask = {};
+    assignments.forEach(function (a) {
+      if (!assignsByTask[a.activityId]) assignsByTask[a.activityId] = [];
+      assignsByTask[a.activityId].push(a);
+    });
+    var resourceById = {};
+    resources.forEach(function (r) { resourceById[r.id] = r; });
+
+    var activities = rawActivities.map(function (a) {
+      var cal = calResult.calendars[a.calendarId];
+      var rawTask = (parsed.tables.TASK ? parsed.tables.TASK.rows.find(function (t) { return t.task_id === a.id; }) : null);
+      var wbsRef = rawTask && rawTask.wbs_id && wbsById[rawTask.wbs_id] ? wbsById[rawTask.wbs_id] : null;
+      var assigns = assignsByTask[a.id] || [];
+      var totalCost = assigns.reduce(function (s, x) { return s + (x.targetCost || 0); }, 0);
+      var resourceIds = assigns.map(function (x) { return x.resourceId; }).filter(function (v, i, arr) { return arr.indexOf(v) === i; });
+      var resourceNames = resourceIds.map(function (rid) { return resourceById[rid] ? resourceById[rid].name : rid; });
+
+      if (!cal) {
+        warnings.push({ severity: 'missing_data', category: 'activity_calendar', itemRef: a.name + ' (' + a.id + ')', description: 'References calendar "' + a.calendarId + '" which was not found in the file — durationDays could not be computed reliably for this activity.' });
+        return { id: a.id, name: a.name, calendarId: a.calendarId, isMilestone: a.isMilestone, durationDays: a.isMilestone ? 0 : null, wbsId: wbsRef && wbsRef.id || null, wbsPath: wbsRef && wbsRef.path || null, resources: resourceNames, targetCost: totalCost, assignments: assigns };
+      }
+      var durationDays = a.isMilestone ? 0 : Math.round(((a.durationHr || 0) / cal.hoursPerDay) * 100) / 100;
+      return { id: a.id, name: a.name, calendarId: a.calendarId, isMilestone: a.isMilestone, durationDays: durationDays, wbsId: wbsRef && wbsRef.id || null, wbsPath: wbsRef && wbsRef.path || null, resources: resourceNames, targetCost: totalCost, assignments: assigns };
+    });
+
+    var relationships = rawRelationships.map(function (r) {
+      var predAct = rawActivities.find(function (a) { return a.id === r.predId; });
+      var cal = predAct && calResult.calendars[predAct.calendarId];
+      var hoursPerDay = (cal && cal.hoursPerDay) || 8;
+      return { predId: r.predId, succId: r.succId, type: r.type, lagDays: Math.round((r.lagHr / hoursPerDay) * 100) / 100 };
+    });
+
+    return {
+      activities: activities,
+      relationships: relationships,
+      calendars: calResult.calendars,
+      resources: resources,
+      wbs: wbs,
+      assignments: assignments,
+      warnings: warnings
+    };
+  }
+
+  function importXER(text, sourceFileName) {
+    var parsed = readXER(text);
+    var report = importReport(parsed, sourceFileName);
+    var schedule = buildSchedule(parsed);
+    // Per Tony's own direct instruction, same fix applied to msprojectimport.js: a missing/
+    // dropped item must never be buried in a generic warnings list -- a distinct, prominent,
+    // structured flag a UI can surface as its own column/badge.
+    var missingDataCount = schedule.warnings.filter(function (w) { return w.severity === 'missing_data'; }).length;
+    report.hasMissingData = missingDataCount > 0;
+    report.missingDataCount = missingDataCount;
+    report.discrepancies = schedule.warnings;
+    return Object.assign({ report: report }, schedule);
+  }
+
+  return {
+    readXER: readXER, importReport: importReport,
+    parseCalendarBlob: parseCalendarBlob, p6ToAmelieWorkDays: p6ToAmelieWorkDays,
+    buildCalendars: buildCalendars, buildActivities: buildActivities, buildRelationships: buildRelationships,
+    buildResources: buildResources, buildWBS: buildWBS, buildAssignments: buildAssignments,
+    buildSchedule: buildSchedule, importXER: importXER
+  };
+});
+
+} catch (e) { window.__AMELIE_LOAD_ISSUES.push({ module: "features/xerimport.js", message: e.message }); }
+</script>
+<script>
+/* ---- src_new/features/mspimport.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — MSPDI reader  (Microsoft Project "Save As XML")
+ * ----------------------------------------------------------------------------
+ * Reads MS Project's OWN stored dates, durations, slack and logic. It NEVER
+ * reschedules and never recomputes the source's numbers — it echoes them, and
+ * Ripple Heads-Up's own CPM (cpm.js / longestpath.js) derives the driving path from
+ * the logic, so MS Project's slack artefacts (completed = 0, out-of-sequence
+ * resets, meaningless summary slack) can never leak into the driving flag.
+ *
+ * Dependency-free by design: no fast-xml-parser, no DOMParser reliance. A
+ * targeted pure-JS extractor for the MSPDI element subset, so the SAME code
+ * runs in a browser, from file://, and under node self-test.
+ *
+ * Emits the exact shape the CPM pipeline consumes:
+ *     { activities, relationships, calendars, warnings, reconciliation }
+ * mirroring xerimport.js / csvimport.js so all three feed one engine.
+ *
+ * Module contract (architecture rule 3): id, version, requires, provides,
+ * init, run, validate, selftest, + before/after/extend reserved slots.
+ * Self-test can FAIL by construction (architecture rule 4) — proven by the
+ * sabotage fixture below.
+ * ========================================================================== */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_MSPIMPORT = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var VERSION = (typeof window !== 'undefined' && window.RIPPLE_REV) || '0.1.0';
+  // MSPDI PredecessorLink Type codes -> canonical relationship types
+  var LINK_TYPE = { '0': 'FF', '1': 'FS', '2': 'SF', '3': 'SS' };
+
+  /* ---- pure-JS MSPDI extraction ------------------------------------------ */
+  // MSPDI uses a single default namespace and simple text child elements for
+  // every field we read; tasks/links/calendars are sibling blocks, never
+  // self-nested, so first-close matching is exact.
+
+  function decode(s) {
+    return String(s)
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&');
+  }
+
+  // Return the raw inner text of the first <tag>…</tag> directly under `xml`.
+  function elText(xml, tag) {
+    var open = '<' + tag + '>';
+    var s = xml.indexOf(open);
+    var openLen = open.length;
+    if (s < 0) {
+      // tolerate attributes: <tag ...>
+      var re = new RegExp('<' + tag + '(?:\\s[^>]*)?>');
+      var m = re.exec(xml);
+      if (!m) return null;
+      s = m.index; openLen = m[0].length;
+    }
+    var e = xml.indexOf('</' + tag + '>', s + openLen);
+    if (e < 0) return null;
+    return decode(xml.slice(s + openLen, e).trim());
+  }
+
+  // Return every <tag>…</tag> block (with inner content) at any depth under `xml`.
+  function blocks(xml, tag) {
+    var out = [];
+    var i = 0, n = xml.length, closeTag = '</' + tag + '>', clen = closeTag.length;
+    while (i < n) {
+      var s = xml.indexOf('<' + tag, i);
+      if (s < 0) break;
+      var c = xml.charAt(s + 1 + tag.length);
+      // guard against <TagPlural> / <TagSomethingElse>
+      if (c !== '>' && c !== ' ' && c !== '\t' && c !== '\r' && c !== '\n') { i = s + 1; continue; }
+      var e = xml.indexOf(closeTag, s);
+      if (e < 0) break;
+      out.push(xml.slice(s, e + clen));
+      i = e + clen;
+    }
+    return out;
+  }
+
+  /* ---- unit conversions --------------------------------------------------- */
+  // MS Project durations in <Duration> are ISO-ish PTnHnMnS; slack/lag fields
+  // (<TotalSlack>, <LinkLag>) are integers in TENTHS OF A MINUTE.
+  function ptToHours(s) {
+    if (!s) return 0;
+    var m = /^PT(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?$/.exec(String(s).trim());
+    if (!m) return null;
+    return (parseFloat(m[1] || 0)) + (parseFloat(m[2] || 0)) / 60 + (parseFloat(m[3] || 0)) / 3600;
+  }
+  function tenthsToHours(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var n = parseFloat(v);
+    return Number.isFinite(n) ? n / 600 : null; // 600 tenths-of-minute = 1 hour
+  }
+  function isoDate(s) {
+    if (!s) return null;
+    return String(s).trim(); // MSPDI already writes ISO "YYYY-MM-DDTHH:MM:SS"
+  }
+
+  /* ---- read: MSPDI text -> structured tasks + calendars ------------------ */
+  function readMSPDI(xmlText) {
+    if (typeof xmlText !== 'string' || xmlText.indexOf('schemas.microsoft.com/project') < 0) {
+      // FAIL CLOSED (architecture rule 5): not an MSPDI file — do not guess.
+      throw new Error('mspimport.js: not a Microsoft Project (MSPDI) file — no MS Project namespace found.');
+    }
+    var projName = elText(xmlText, 'Name');
+    var minutesPerDay = parseFloat(elText(xmlText, 'MinutesPerDay')) || 480;
+    var hoursPerDay = minutesPerDay / 60;
+
+    // calendars
+    var calContainer = blocks(xmlText, 'Calendars')[0] || '';
+    var calendars = blocks(calContainer, 'Calendar').map(function (cb) {
+      var workDays = {};
+      blocks(cb, 'WeekDay').forEach(function (wd) {
+        var dt = elText(wd, 'DayType');       // 1=Sun … 7=Sat
+        var working = elText(wd, 'DayWorking') === '1';
+        if (dt) workDays[dt] = working;
+      });
+      return { uid: elText(cb, 'UID'), name: elText(cb, 'Name'), workDays: workDays };
+    });
+
+    // tasks
+    var taskContainer = blocks(xmlText, 'Tasks')[0] || '';
+    var tasks = blocks(taskContainer, 'Task').map(function (tb) {
+      var preds = blocks(tb, 'PredecessorLink').map(function (pl) {
+        return {
+          predUid: elText(pl, 'PredecessorUID'),
+          type: LINK_TYPE[elText(pl, 'Type')] || 'FS',
+          lagHr: tenthsToHours(elText(pl, 'LinkLag')) || 0
+        };
+      });
+      return {
+        uid: elText(tb, 'UID'),
+        id: elText(tb, 'ID'),
+        name: elText(tb, 'Name'),
+        summary: elText(tb, 'Summary') === '1',
+        milestone: elText(tb, 'Milestone') === '1',
+        manual: elText(tb, 'Manual') === '1',
+        critical: elText(tb, 'Critical') === '1',   // reference only — never used for driving
+        pctComplete: parseInt(elText(tb, 'PercentComplete') || '0', 10) || 0,
+        start: isoDate(elText(tb, 'Start')),
+        finish: isoDate(elText(tb, 'Finish')),
+        durationHr: ptToHours(elText(tb, 'Duration')),
+        storedSlackHr: tenthsToHours(elText(tb, 'TotalSlack')), // null when MSP blanks it
+        preds: preds
+      };
+    });
+
+    return { projectName: projName, hoursPerDay: hoursPerDay, calendars: calendars, tasks: tasks };
+  }
+
+  /* ---- build: structured -> pipeline contract + reconciliation ----------- */
+  function buildSchedule(parsed) {
+    var hpd = parsed.hoursPerDay || 8;
+    var warnings = [];
+    var idSet = {};
+    parsed.tasks.forEach(function (t) { idSet[String(t.uid)] = true; });
+
+    var activities = parsed.tasks.map(function (t) {
+      var status = t.pctComplete >= 100 ? 'completed' : (t.pctComplete > 0 ? 'in_progress' : 'not_started');
+      var durHr = (t.durationHr == null ? null : t.durationHr);
+      return {
+        id: t.uid,
+        name: t.name,
+        calendarId: null,                 // MSPDI task-level calendar link optional; project calendar assumed
+        isMilestone: t.milestone,
+        isSummary: t.summary,             // excluded from the driving path downstream
+        isManual: t.manual,               // excluded from the driving path downstream
+        status: status,                   // completed tasks excluded from driving downstream
+        durationHr: durHr,
+        durationDays: (durHr == null ? null : Math.round((durHr / hpd) * 100) / 100),
+        pctComplete: t.pctComplete,
+        start: t.start,
+        finish: t.finish,
+        storedSlackHr: t.storedSlackHr,   // carried for reconciliation; NOT the driving source
+        _sourceCritical: t.critical
+      };
+    });
+
+    // relationships — FAIL CLOSED on orphans: a link that points at an activity
+    // not in this programme is excluded and reported prominently (Tony's rule:
+    // a dropped item is a distinct structured flag, never buried in warnings).
+    var relationships = [];
+    var orphanLinks = [];
+    var linksIn = 0;
+    parsed.tasks.forEach(function (t) {
+      (t.preds || []).forEach(function (p) {
+        linksIn++;
+        var predOk = idSet[String(p.predUid)];
+        var succOk = idSet[String(t.uid)];
+        if (!predOk || !succOk) {
+          orphanLinks.push({
+            predId: p.predUid, succId: t.uid, type: p.type,
+            reason: !predOk ? 'predecessor activity ' + p.predUid + ' is not in this programme'
+                            : 'successor activity ' + t.uid + ' is not in this programme'
+          });
+          return;
+        }
+        relationships.push({
+          predId: p.predUid, succId: t.uid, type: p.type,
+          lagHr: p.lagHr, lagDays: Math.round((p.lagHr / hpd) * 100) / 100
+        });
+      });
+    });
+
+    var reconciliation = {
+      tasksIn: parsed.tasks.length,
+      tasksOut: activities.length,
+      linksIn: linksIn,
+      linksOut: relationships.length,
+      orphanLinks: orphanLinks,
+      completedTasks: activities.filter(function (a) { return a.status === 'completed'; }).length,
+      manualTasks: activities.filter(function (a) { return a.isManual; }).length,
+      summaryTasks: activities.filter(function (a) { return a.isSummary; }).length,
+      ok: (activities.length === parsed.tasks.length) && (relationships.length + orphanLinks.length === linksIn)
+    };
+    if (orphanLinks.length) {
+      warnings.push({
+        severity: 'dropped_link', category: 'logic',
+        count: orphanLinks.length,
+        description: orphanLinks.length + ' relationship(s) reference an activity not present in this programme — excluded and listed. The master programme governs.'
+      });
+    }
+
+    return {
+      activities: activities,
+      relationships: relationships,
+      calendars: parsed.calendars,
+      warnings: warnings,
+      reconciliation: reconciliation
+    };
+  }
+
+  function importMSPDI(xmlText, sourceFileName) {
+    var parsed = readMSPDI(xmlText);
+    var schedule = buildSchedule(parsed);
+    var report = {
+      source: sourceFileName || null,
+      projectName: parsed.projectName,
+      format: 'MSPDI (Microsoft Project Save-As-XML)',
+      reconciliation: schedule.reconciliation,
+      hasDroppedLinks: schedule.reconciliation.orphanLinks.length > 0,
+      discrepancies: schedule.warnings
+    };
+    return Object.assign({ report: report }, schedule);
+  }
+
+  /* ---- self-test (must be able to FAIL) ---------------------------------- */
+  // Embedded known-answer fixture: 5 tasks (FS/SS chain), a floating task, a
+  // MANUAL task (slack 0 but off-logic), and one ORPHAN link (pred 99 absent).
+  var FIX = [
+    '<?xml version="1.0"?>',
+    '<Project xmlns="http://schemas.microsoft.com/project"><Name>selftest</Name><MinutesPerDay>480</MinutesPerDay>',
+    '<Calendars><Calendar><UID>1</UID><Name>Standard</Name>',
+    '<WeekDays><WeekDay><DayType>2</DayType><DayWorking>1</DayWorking></WeekDay></WeekDays></Calendar></Calendars>',
+    '<Tasks>',
+    '<Task><UID>1</UID><Name>A</Name><Summary>0</Summary><Manual>0</Manual><Duration>PT40H0M0S</Duration><PercentComplete>0</PercentComplete><TotalSlack>0</TotalSlack></Task>',
+    '<Task><UID>2</UID><Name>B</Name><Summary>0</Summary><Manual>0</Manual><Duration>PT40H0M0S</Duration><PercentComplete>0</PercentComplete><TotalSlack>0</TotalSlack><PredecessorLink><PredecessorUID>1</PredecessorUID><Type>1</Type><LinkLag>0</LinkLag></PredecessorLink></Task>',
+    '<Task><UID>3</UID><Name>C</Name><Summary>0</Summary><Manual>0</Manual><Duration>PT24H0M0S</Duration><PercentComplete>0</PercentComplete><TotalSlack>9600</TotalSlack><PredecessorLink><PredecessorUID>1</PredecessorUID><Type>3</Type><LinkLag>4800</LinkLag></PredecessorLink></Task>',
+    '<Task><UID>4</UID><Name>D</Name><Summary>0</Summary><Manual>1</Manual><Duration>PT8H0M0S</Duration><PercentComplete>0</PercentComplete><TotalSlack>0</TotalSlack><PredecessorLink><PredecessorUID>99</PredecessorUID><Type>1</Type><LinkLag>0</LinkLag></PredecessorLink></Task>',
+    '</Tasks></Project>'
+  ].join('\n');
+
+  function selftest(opts) {
+    var sabotage = opts && opts.sabotage;
+    var xml = FIX;
+    if (sabotage === 'linktype') xml = xml.replace('<Type>3</Type>', '<Type>9</Type>'); // bad code -> should NOT decode to SS
+    var checks = [];
+    function ck(name, pass) { checks.push({ name: name, pass: !!pass }); }
+    try {
+      var r = importMSPDI(xml, 'selftest.xml');
+      ck('4 tasks parsed', r.activities.length === 4);
+      ck('SS lag decoded to 1.0 day', r.relationships.some(function (x) { return x.predId === '1' && x.succId === '3' && x.type === 'SS' && Math.abs(x.lagDays - 1.0) < 1e-9; }));
+      ck('9600 tenths -> 2.0d stored slack', Math.abs(r.activities.find(function (a) { return a.id === '3'; }).storedSlackHr - 16) < 1e-9);
+      ck('manual task flagged', r.activities.find(function (a) { return a.id === '4'; }).isManual === true);
+      ck('orphan link (pred 99) excluded + reported', r.reconciliation.orphanLinks.length === 1 && r.report.hasDroppedLinks === true);
+      ck('reconciliation links in = out + dropped', r.reconciliation.linksOut + r.reconciliation.orphanLinks.length === r.reconciliation.linksIn);
+    } catch (e) {
+      ck('parse did not throw', false);
+    }
+    var pass = checks.every(function (c) { return c.pass; });
+    return { ok: pass, checks: checks };
+  }
+
+  /* ---- module contract --------------------------------------------------- */
+  return {
+    id: 'mspimport',
+    version: VERSION,
+    requires: [],
+    provides: ['readMSPDI', 'buildSchedule', 'importMSPDI'],
+    init: function () { return true; },
+    run: function (xmlText, sourceFileName) { return importMSPDI(xmlText, sourceFileName); },
+    validate: function (xmlText) {
+      return typeof xmlText === 'string' && xmlText.indexOf('schemas.microsoft.com/project') >= 0;
+    },
+    selftest: selftest,
+    before: null, after: null, extend: null,
+    // direct API
+    readMSPDI: readMSPDI, buildSchedule: buildSchedule, importMSPDI: importMSPDI,
+    ptToHours: ptToHours, tenthsToHours: tenthsToHours, LINK_TYPE: LINK_TYPE
+  };
+});
+
+</script>
+<script>
+/* ---- src/features__csvimport.js ---- */
+/* ===== EMBEDDED VERBATIM: features/csvimport.js (sha256 51f8b2d94c546eaa…) ===== */
+try {
+/* AMELIE·AI PRO-PLUS — csvimport.js
+ * CSV import — the first of the three import paths Tony asked for (P6 XER, CSV, scan/OCR).
+ * Built this session because it's genuinely well-scoped; P6 XER (a large, idiosyncratic binary-
+ * adjacent text format the forensic suite's own ARCHIE spent multiple sessions hardening
+ * against) and scan/OCR (needs actual image/document recognition, a different kind of
+ * engineering entirely) are real, separate undertakings — not attempted here, not silently
+ * skipped either; see PROJECT_PLAN.md for the honest status of both.
+ *
+ * Expected CSV columns (header row required, case-insensitive, order-independent):
+ *   id, name, duration_days, predecessors, calendar, is_milestone
+ * predecessors is a single cell listing one or more predecessor ids, separated by ; or |,
+ * each optionally suffixed with a relationship type and lag, e.g. "A1:FS+2;A2:SS" — defaults
+ * to FS+0 if no suffix is given, since that's what the vast majority of real schedules use and
+ * forcing every row to spell it out would make the common case needlessly verbose.
+ *
+ * Output is the EXACT input shape cpm.js's runCPM expects — this module's only job is getting
+ * real-world spreadsheet data into that shape correctly and safely; it does not touch or
+ * duplicate any scheduling logic.
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_CSVIMPORT = factory();
+})(typeof window !== 'undefined' ? window : this, function () {
+  'use strict';
+
+  function fail(msg) { throw new Error('csvimport.js: ' + msg); }
+
+  // A small, correct CSV line parser handling quoted fields and embedded commas — deliberately
+  // not a regex-split on comma, which breaks the moment a name contains one ("Slab, Level 2").
+  function parseCSVLine(line) {
+    var fields = [], cur = '', inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+        } else cur += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ',') { fields.push(cur); cur = ''; }
+        else cur += c;
+      }
+    }
+    fields.push(cur);
+    return fields.map(function (f) { return f.trim(); });
+  }
+
+  function parseCSV(text) {
+    var lines = text.split(/\r\n|\r|\n/).filter(function (l) { return l.trim().length; });
+    if (!lines.length) fail('CSV is empty');
+    var header = parseCSVLine(lines[0]).map(function (h) { return h.toLowerCase().trim(); });
+    var required = ['id', 'name', 'duration_days'];
+    required.forEach(function (r) { if (header.indexOf(r) === -1) fail('CSV is missing required column "' + r + '" (found: ' + header.join(', ') + ')'); });
+    return lines.slice(1).map(function (line, idx) {
+      var fields = parseCSVLine(line);
+      if (fields.length !== header.length) fail('row ' + (idx + 2) + ' has ' + fields.length + ' fields but the header has ' + header.length + ' (row: "' + line + '")');
+      var row = {};
+      header.forEach(function (h, i) { row[h] = fields[i]; });
+      return row;
+    });
+  }
+
+  var REL_TYPES = ['FS', 'SS', 'FF', 'SF'];
+
+  function parsePredecessorCell(cell, rowIndex) {
+    if (!cell || !cell.trim()) return [];
+    return cell.split(/[;|]/).map(function (s) { return s.trim(); }).filter(Boolean).map(function (token) {
+      var m = /^([^:]+)(?::([A-Z]{2})([+-]\d+)?)?$/.exec(token);
+      if (!m) fail('row ' + rowIndex + ': could not parse predecessor token "' + token + '" (expected "id" or "id:FS+2")');
+      var predId = m[1].trim(), type = m[2] || 'FS', lag = m[3] ? parseInt(m[3], 10) : 0;
+      if (REL_TYPES.indexOf(type) === -1) fail('row ' + rowIndex + ': invalid relationship type "' + type + '" in "' + token + '" (must be FS, SS, FF, or SF)');
+      return { predId: predId, type: type, lagDays: lag };
+    });
+  }
+
+  // Converts parsed CSV rows into { activities, relationships } — the exact shape cpm.js
+  // expects (minus projectStart/calendars, which are project-level, not per-row, and supplied
+  // separately by the caller).
+  function toScheduleInput(rows) {
+    var seenIds = {};
+    var activities = rows.map(function (row, idx) {
+      var rowNum = idx + 2; // +2: 1-indexed, plus the header row
+      if (!row.id || !row.id.trim()) fail('row ' + rowNum + ' has no id');
+      if (seenIds[row.id]) fail('duplicate activity id "' + row.id + '" (first seen earlier, repeated at row ' + rowNum + ')');
+      seenIds[row.id] = true;
+      if (!row.name || !row.name.trim()) fail('row ' + rowNum + ' (id "' + row.id + '") has no name');
+      var isMilestone = /^(true|yes|1)$/i.test(row.is_milestone || '');
+      var duration = null;
+      if (!isMilestone) {
+        duration = parseFloat(row.duration_days);
+        if (isNaN(duration) || duration < 0) fail('row ' + rowNum + ' (id "' + row.id + '") has an invalid duration_days ("' + row.duration_days + '") — must be a non-negative number, or set is_milestone to true');
+      }
+      return {
+        id: row.id.trim(), name: row.name.trim(),
+        durationDays: duration, isMilestone: isMilestone,
+        calendarId: (row.calendar && row.calendar.trim()) || 'standard',
+        _predecessorCell: row.predecessors || '', _rowNum: rowNum
+      };
+    });
+
+    var relationships = [];
+    activities.forEach(function (a) {
+      parsePredecessorCell(a._predecessorCell, a._rowNum).forEach(function (rel) {
+        relationships.push({ predId: rel.predId, succId: a.id, type: rel.type, lagDays: rel.lagDays });
+      });
+    });
+
+    // Validate relationships reference real activities — a common, genuinely useful catch for
+    // real-world CSVs (typo'd ids, a predecessor deleted from one sheet but not another).
+    var idSet = {}; activities.forEach(function (a) { idSet[a.id] = true; });
+    relationships.forEach(function (r) {
+      if (!idSet[r.predId]) fail('a predecessor reference "' + r.predId + '" (feeding into "' + r.succId + '") does not match any activity id in the file — likely a typo or a row that was deleted from one sheet but not the other');
+    });
+
+    // Strip the internal-only fields before returning the public shape.
+    var cleanActivities = activities.map(function (a) {
+      return { id: a.id, name: a.name, durationDays: a.durationDays, isMilestone: a.isMilestone, calendarId: a.calendarId };
+    });
+
+    return { activities: cleanActivities, relationships: relationships };
+  }
+
+  function importCSV(text) {
+    var rows = parseCSV(text);
+    return toScheduleInput(rows);
+  }
+
+  return { parseCSV: parseCSV, parseCSVLine: parseCSVLine, parsePredecessorCell: parsePredecessorCell, toScheduleInput: toScheduleInput, importCSV: importCSV };
+});
+
+} catch (e) { window.__AMELIE_LOAD_ISSUES.push({ module: "features/csvimport.js", message: e.message }); }
+</script>
+<script>
+/* ---- src/features__sha256.js ---- */
+/* ===== EMBEDDED VERBATIM: features/sha256.js (sha256 f2c6f77337c3e997…) ===== */
+try {
+/* AMELIE·AI PRO-PLUS — sha256.js
+ * A compact, dependency-free, fully SYNCHRONOUS SHA-256 implementation (FIPS 180-4), for the
+ * audit log's tamper-evidence chain. Replaces the earlier FNV-1a placeholder — Tony's roadmap
+ * flagged this explicitly as needing a documented decision for "claims/defensibility," and the
+ * right decision, given that framing, is a real cryptographic hash, not a fast-but-non-
+ * cryptographic one.
+ *
+ * WHY PURE JS RATHER THAN THE PLATFORM'S OWN CRYPTO API: the Web Crypto API's subtle.digest()
+ * is Promise-only (async) in every browser, for security-isolation reasons that have nothing to
+ * do with SHA-256 itself needing to be async — the algorithm is a pure, synchronous
+ * computation. Making the whole audit log's logAction() async, everywhere it's called across
+ * the app, purely to satisfy an API design constraint that isn't actually about the algorithm,
+ * would be a worse trade than implementing the (well-specified, unambiguous, thoroughly
+ * standard-tested) algorithm directly. Node's own `crypto` module IS synchronous and is used
+ * here only to generate the official test vectors this implementation is checked against — it
+ * is not a runtime dependency of this module, which has none.
+ *
+ * Correctness is not assumed — verified directly against the official FIPS 180-4 / NIST test
+ * vectors (see tests/sha256.selftest.js), not just "produces a hex string that looks right."
+ */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.AMELIE_SHA256 = factory();
+})(typeof window !== 'undefined' ? window : this, function () {
+  'use strict';
+
+  var K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+
+  function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+
+  function sha256(message) {
+    // UTF-8 encode the input into bytes first — required so a string with non-ASCII
+    // characters (an activity name, a person's name) hashes the same bytes any other correct
+    // SHA-256 implementation would see, not a JS-internal UTF-16 representation.
+    var bytes = utf8Bytes(message);
+    var bitLen = bytes.length * 8;
+
+    // Padding: a single 1-bit, then zeros, then the original length as a 64-bit big-endian
+    // integer, so the total length is a multiple of 512 bits (64 bytes).
+    var padded = bytes.slice();
+    padded.push(0x80);
+    while (padded.length % 64 !== 56) padded.push(0);
+    for (var i = 7; i >= 0; i--) padded.push((bitLen / Math.pow(2, i * 8)) & 0xff);
+
+    var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+
+    for (var chunkStart = 0; chunkStart < padded.length; chunkStart += 64) {
+      var w = new Array(64);
+      for (var t = 0; t < 16; t++) {
+        var o = chunkStart + t * 4;
+        w[t] = ((padded[o] << 24) | (padded[o + 1] << 16) | (padded[o + 2] << 8) | padded[o + 3]) >>> 0;
+      }
+      for (t = 16; t < 64; t++) {
+        var s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+        var s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+        w[t] = (w[t - 16] + s0 + w[t - 7] + s1) >>> 0;
+      }
+
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (t = 0; t < 64; t++) {
+        var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        var ch = (e & f) ^ (~e & g);
+        var temp1 = (h + S1 + ch + K[t] + w[t]) >>> 0;
+        var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var temp2 = (S0 + maj) >>> 0;
+        h = g; g = f; f = e; e = (d + temp1) >>> 0;
+        d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+      }
+      H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+      H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+    }
+
+    return H.map(function (h) { return ('00000000' + (h >>> 0).toString(16)).slice(-8); }).join('');
+  }
+
+  function utf8Bytes(str) {
+    var bytes = [];
+    for (var i = 0; i < str.length; i++) {
+      var code = str.codePointAt(i);
+      if (code > 0xFFFF) i++; // surrogate pair consumed two UTF-16 units
+      if (code < 0x80) bytes.push(code);
+      else if (code < 0x800) bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+      else if (code < 0x10000) bytes.push(0xE0 | (code >> 12), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+      else bytes.push(0xF0 | (code >> 18), 0x80 | ((code >> 12) & 0x3F), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+    }
+    return bytes;
+  }
+
+  return { sha256: sha256, utf8Bytes: utf8Bytes };
+});
+
+} catch (e) { window.__AMELIE_LOAD_ISSUES.push({ module: "features/sha256.js", message: e.message }); }
+</script>
+<script>
+/* ---- src_new/core/core.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — core orchestrator
+ * ----------------------------------------------------------------------------
+ * The central core (architecture rule 2): it owns all state (one model) and all
+ * dispatch. Modules never call each other — they read the shared model and write
+ * their own declared slots, and the core decides the order.
+ *
+ * It reuses:
+ *   registry.js  — module discovery (register / get by name)
+ *   contracts.js — the {requires, provides} handshake + automatic run order
+ *
+ * THE CONNECTORS (Tony's "leave connectors for additions to our thinking"):
+ *   - a new analysis module slots in by declaring the model slot(s) it REQUIRES
+ *     and the slot it PROVIDES — the core re-derives the run order automatically,
+ *     nothing existing is edited (contracts.js refuses a duplicate provider, so
+ *     "one copy of everything" is enforced structurally).
+ *   - every module may define reserved before/after/extend hooks (rule 3 spare
+ *     pipes) that the core calls around its run() — empty by default.
+ *   - run-wide onBefore/onAfter hooks let a future concern (telemetry, a new
+ *     export, a print pass) attach without touching any stage.
+ * ========================================================================== */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = factory(require('./registry.js'), require('./contracts.js'));
+  } else {
+    root.RIPPLE_CORE = factory(root.AMELIE_REGISTRY, root.AMELIE_CONTRACTS);
+  }
+})(typeof window !== 'undefined' ? window : this, function (REGISTRY, CONTRACTS) {
+  'use strict';
+
+  // Single source of truth is window.RIPPLE_REV (set once at the top of the HTML).
+  // When reissuing: change that one string + the download filename. Nothing else.
+  var REV = (typeof window !== 'undefined' && window.RIPPLE_REV) || '0.1.0';
+  var runHooks = { before: [], after: [] };
+
+  function fail(msg) { throw new Error('core.js: ' + msg); }
+
+  // Register a pipeline module. Uniform contract (rule 3):
+  //   { id, version, requires:[slots], provides:[slots], run(model,ctx)->{slot:value},
+  //     selftest?, before?(model), after?(model), extend?(model) }
+  function useModule(mod) {
+    if (!mod || !mod.id) fail('useModule() needs a module with an id');
+    if (typeof mod.run !== 'function') fail('module "' + mod.id + '" must define run()');
+    REGISTRY.register(mod.id, mod, { version: mod.version || '0' });
+    CONTRACTS.registerContract(mod.id, { requires: mod.requires || [], provides: mod.provides || [] });
+    return true;
+  }
+
+  // Run the whole pipeline for one source input, returning the fully-populated model.
+  // FAIL CLOSED (rule 5): any stage throwing stops the run and surfaces where.
+  function run(source, opts) {
+    opts = opts || {};
+    var names = REGISTRY.list().map(function (m) { return m.name; });
+    var order = CONTRACTS.resolveOrder(names);           // connectors -> automatic order
+    var model = { source: source, _rev: REV, _order: order.slice(), _log: [], _provenance: {} };
+
+    runHooks.before.forEach(function (h) { h(model); });
+
+    order.forEach(function (id) {
+      var mod = REGISTRY.get(id);
+      try {
+        if (typeof mod.before === 'function') mod.before(model);
+        var out = mod.run(model, { registry: REGISTRY, rev: REV }) || {};
+        (mod.provides || []).forEach(function (slot) {
+          if (out[slot] === undefined) fail('module "' + id + '" declared it provides "' + slot + '" but run() did not return it');
+          model[slot] = out[slot];
+          model._provenance[slot] = id;                  // provenance on every slot (rule 7)
+        });
+        if (typeof mod.after === 'function') mod.after(model);
+        if (typeof mod.extend === 'function') mod.extend(model);   // reserved connector
+        model._log.push({ module: id, ok: true });
+      } catch (e) {
+        model._log.push({ module: id, ok: false, error: e.message });
+        throw new Error('core.js: pipeline stopped at module "' + id + '": ' + e.message);
+      }
+    });
+
+    runHooks.after.forEach(function (h) { h(model); });
+    return model;
+  }
+
+  // Run every registered module's selftest() (rule 4). Returns pass/fail per module;
+  // the app's user-runnable self-test drives this and must be able to go red.
+  function selftestAll() {
+    var results = REGISTRY.list().map(function (m) {
+      var mod = REGISTRY.get(m.name);
+      if (typeof mod.selftest !== 'function') return { module: m.name, ran: false };
+      try { var r = mod.selftest(); return { module: m.name, ran: true, ok: !!(r && r.ok), detail: r }; }
+      catch (e) { return { module: m.name, ran: true, ok: false, error: e.message }; }
+    });
+    var testable = results.filter(function (r) { return r.ran; });
+    return { ok: testable.every(function (r) { return r.ok; }), results: results };
+  }
+
+  return {
+    rev: REV,
+    useModule: useModule,
+    run: run,
+    selftestAll: selftestAll,
+    onBefore: function (h) { runHooks.before.push(h); },   // run-wide connector
+    onAfter: function (h) { runHooks.after.push(h); },     // run-wide connector
+    registry: REGISTRY, contracts: CONTRACTS,
+    _reset: function () { REGISTRY._reset(); CONTRACTS._reset(); runHooks = { before: [], after: [] }; }
+  };
+});
+
+</script>
+<script>
+/* ---- app/pipeline.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — pipeline stages
+ * Each stage is a uniform-contract module registered through the core. New
+ * analysis slots in by declaring requires/provides (the connectors). This is the
+ * exact chain validated against Horizon Rev A/B (88/88, 69/69).
+ * ========================================================================== */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = factory(
+      require('../src_new/core/core.js'),
+      require('../loadtest/features/xerimport.js'),
+      require('../src_new/features/mspimport.js'),
+      null,
+      require('../src/features__sha256.js')
+    );
+  } else {
+    factory(root.RIPPLE_CORE, root.AMELIE_XERIMPORT, root.AMELIE_MSPIMPORT, root.AMELIE_CSVIMPORT, root.AMELIE_SHA256);
+  }
+})(typeof window !== 'undefined' ? window : this, function (CORE, XER, MSP, CSV, SHA) {
+  'use strict';
+
+  var V = (typeof window !== 'undefined' && window.RIPPLE_REV) || '0.1.0';
+  var MS_DAY = 864e5;
+  function fileHash(t) { try { return (SHA && SHA.sha256) ? SHA.sha256(String(t)) : null; } catch (e) { return null; } }
+  function pdate(s) { if (!s) return null; var d = new Date(String(s).replace(' ', 'T')); return isNaN(d) ? null : d; }
+  function hoursToDays(h, hpd) { return (h == null || !isFinite(h)) ? null : Math.round((h / (hpd || 8)) * 10) / 10; }
+
+  /* ---- import: dispatch XER / MSP / CSV -> one schedule, echoing the planner's own dates + float */
+  CORE.useModule({
+    id: 'import', version: V, requires: [], provides: ['schedule'],
+    run: function (model) {
+      var s = model.source, kind = s.kind;
+      if (kind === 'XER') {
+        var parsed = XER.readXER(s.text), sched = XER.buildSchedule(parsed), byId = {};
+        parsed.tables.TASK.rows.forEach(function (t) { byId[t.task_id] = t; });
+        var acts = sched.activities.map(function (a) {
+          var t = byId[a.id] || {};
+          var status = t.status_code === 'TK_Complete' ? 'completed' : (t.status_code === 'TK_Active' ? 'in_progress' : 'not_started');
+          return {
+            id: a.id, name: a.name, hoursPerDay: 8, durationDays: a.durationDays,
+            start: t.act_start_date || t.early_start_date || t.target_start_date,
+            finish: t.act_end_date || t.early_end_date || t.target_end_date,
+            floatHr: parseFloat(t.total_float_hr_cnt), status: status
+          };
+        });
+        var storedFloatById = {}, completedIds = {};
+        acts.forEach(function (a) { storedFloatById[a.id] = a.floatHr; if (a.status === 'completed') completedIds[a.id] = true; });
+        var proj = (parsed.tables.PROJECT && parsed.tables.PROJECT.rows[0]) || {};
+        return { schedule: { kind: 'XER', name: proj.proj_short_name || s.fileName || 'Programme',
+          activities: acts, relationships: sched.relationships, calendars: sched.calendars,
+          storedFloatById: storedFloatById, completedIds: completedIds, flags: {}, dataDate: proj.last_recalc_date || null, sourceHash: fileHash(s.text) } };
+      }
+      if (kind === 'MSP') {
+        var r = MSP.importMSPDI(s.text, s.fileName);
+        var sfById = {}, compIds = {}, flags = {};
+        var ma = r.activities.map(function (a) {
+          sfById[a.id] = (a.storedSlackHr == null ? NaN : a.storedSlackHr);
+          if (a.status === 'completed') compIds[a.id] = true;
+          flags[a.id] = { summary: a.isSummary, manual: a.isManual };
+          return { id: a.id, name: a.name, hoursPerDay: 8, durationDays: a.durationDays, start: a.start, finish: a.finish,
+            floatHr: (a.storedSlackHr == null ? NaN : a.storedSlackHr), status: a.status };
+        });
+        return { schedule: { kind: 'MSP', name: r.report.projectName || s.fileName || 'Programme',
+          activities: ma, relationships: r.relationships, calendars: r.calendars,
+          storedFloatById: sfById, completedIds: compIds, flags: flags, dataDate: null,
+          droppedLinks: r.reconciliation.orphanLinks, sourceHash: fileHash(s.text) } };
+      }
+      if (kind === 'CSV') {
+        var c = CSV.importCSV(s.text);
+        var acts2 = (c.activities || []).map(function (a) {
+          return { id: a.id, name: a.name, hoursPerDay: 8, start: a.start, finish: a.finish,
+            floatHr: (a.totalFloatHr != null ? a.totalFloatHr : NaN),
+            status: a.percentComplete >= 100 ? 'completed' : (a.percentComplete > 0 ? 'in_progress' : 'not_started') };
+        });
+        var sf2 = {}, ci2 = {}; acts2.forEach(function (a) { sf2[a.id] = a.floatHr; if (a.status === 'completed') ci2[a.id] = true; });
+        return { schedule: { kind: 'CSV', name: s.fileName || 'Programme', activities: acts2,
+          relationships: c.relationships || [], calendars: c.calendars || {}, storedFloatById: sf2,
+          completedIds: ci2, flags: {}, dataDate: null,
+          hasLogic: (c.relationships || []).length > 0, hasFloat: acts2.some(function (a) { return isFinite(a.floatHr); }), sourceHash: fileHash(s.text) } };
+      }
+      throw new Error('Unsupported file type. Load an XER, a Microsoft Project XML (including Asta exported as MSP XML), or a CSV.');
+    }
+  });
+
+  /* ---- reconcile: drop + report orphan links (fail closed), hand the CPM a valid network */
+  CORE.useModule({
+    id: 'reconcile', version: V, requires: ['schedule'], provides: ['logic'],
+    run: function (model) {
+      var ids = {}; model.schedule.activities.forEach(function (a) { ids[String(a.id)] = true; });
+      var clean = [], dropped = (model.schedule.droppedLinks || []).slice();
+      model.schedule.relationships.forEach(function (r) {
+        if (ids[String(r.predId)] && ids[String(r.succId)]) clean.push(r);
+        else dropped.push({ predId: r.predId, succId: r.succId, reason: (!ids[String(r.predId)] ? 'predecessor' : 'successor') + ' not in programme' });
+      });
+      return { logic: { relationships: clean, droppedLinks: dropped } };
+    }
+  });
+
+  /* ---- currency: how fresh is the programme? (the honest headline) */
+  CORE.useModule({
+    id: 'currency', version: V, requires: ['schedule'], provides: ['currency'],
+    run: function (model) {
+      var dd = pdate(model.schedule.dataDate), now = new Date();
+      var ageDays = dd ? Math.round((now - dd) / MS_DAY) : null;
+      var completed = Object.keys(model.schedule.completedIds).length;
+      // remaining work dated before the data date = a sign the programme wasn't rescheduled
+      var behind = 0;
+      if (dd) model.schedule.activities.forEach(function (a) {
+        if (a.status !== 'completed') { var s = pdate(a.start); if (s && s < dd) behind++; }
+      });
+      return { currency: { dataDate: model.schedule.dataDate, ageDays: ageDays,
+        stale: (ageDays != null && ageDays > 28), completed: completed, remainingInPast: behind } };
+    }
+  });
+
+  /* ---- driving: the PROGRAMME's own stored float. Never our CPM. Exclude completed/summary/manual. */
+  CORE.useModule({
+    id: 'driving', version: V, requires: ['schedule', 'logic'], provides: ['driving'],
+    run: function (model) {
+      var sch = model.schedule, sf = sch.storedFloatById, comp = sch.completedIds, fl = sch.flags || {};
+      var live = sch.activities.filter(function (a) {
+        var f = sf[a.id]; if (!isFinite(f)) return false; if (comp[a.id]) return false;
+        var g = fl[a.id] || {}; return !(g.summary || g.manual);
+      }).map(function (a) { return { id: a.id, f: sf[a.id], start: pdate(a.start) }; });
+      var hasFloat = live.length > 0;
+      var min = hasFloat ? Math.min.apply(null, live.map(function (x) { return x.f; })) : null;
+      var set = {}; if (hasFloat) live.filter(function (x) { return x.f === min; }).forEach(function (x) { set[String(x.id)] = true; });
+      var starts = Object.keys(set).map(function (id) { var a = live.find(function (x) { return String(x.id) === id; }); return a && a.start; }).filter(Boolean).sort(function (a, b) { return a - b; });
+      var conf = 'high';
+      if (!hasFloat) conf = 'unavailable — this file carries no float; driving path cannot be shown from it';
+      else if (model.currency && model.currency.stale) conf = 'review — the programme may be stale';
+      else if (sch.kind === 'MSP') conf = 'from Microsoft Project — completed/summary/manual excluded; verify if out-of-sequence progress is present';
+      return { driving: { available: hasFloat, minFloatHr: min, count: Object.keys(set).length,
+        set: set, has: function (id) { return !!set[String(id)]; },
+        firstStart: starts.length ? starts[0] : null,
+        source: 'programme stored float (the planner\u2019s own result)', confidence: conf } };
+    }
+  });
+
+  /* ---- lookahead: bands from the data date, urgency-ordered (least float first), Held-by ripple */
+  CORE.useModule({
+    id: 'lookahead', version: V, requires: ['schedule', 'logic', 'driving'], provides: ['lookahead'],
+    run: function (model) {
+      var sch = model.schedule, rels = model.logic.relationships, drv = model.driving;
+      var start = pdate(sch.dataDate) || new Date();
+      var D = {}; sch.activities.forEach(function (a) { D[a.id] = { s: pdate(a.start), f: pdate(a.finish), hpd: a.hoursPerDay || 8 }; });
+      var predsBySucc = {}; rels.forEach(function (r) { (predsBySucc[r.succId] = predsBySucc[r.succId] || []).push(r); });
+      function heldBy(id) { var best = null, bt = -Infinity; (predsBySucc[id] || []).forEach(function (r) { var pf = D[r.predId] && D[r.predId].f; if (pf && pf.getTime() > bt) { bt = pf.getTime(); best = r.predId; } }); return best; }
+      var bands = {};
+      [2, 4, 6, 8].forEach(function (w) {
+        var end = new Date(start.getTime() + w * 7 * MS_DAY);
+        var rows = sch.activities.filter(function (a) {
+          if (a.status === 'completed') return false; var d = D[a.id]; if (!d.s && !d.f) return false;
+          var s = d.s || d.f, f = d.f || d.s; return f >= start && s <= end;
+        }).map(function (a) { var d = D[a.id]; return {
+          id: a.id, name: a.name, floatDays: hoursToDays(a.floatHr, d.hpd),
+          driving: drv.has(a.id), heldBy: heldBy(a.id), start: a.start, status: a.status };
+        }).sort(function (x, y) { return (x.floatDays == null ? 1e9 : x.floatDays) - (y.floatDays == null ? 1e9 : y.floatDays); });
+        var tightest = rows.length ? rows[0].floatDays : null;
+        bands[w] = { count: rows.length, tightestFloatDays: tightest, rows: rows };
+      });
+      var drvStart = drv.firstStart ? drv.firstStart.toISOString().slice(0, 10) : null;
+      return { lookahead: { windowStart: sch.dataDate, drivingStartsOn: drvStart, bands: bands } };
+    }
+  });
+
+  /* ---- make-ready B: readiness for every activity (light on each row) + constraint list */
+  CORE.useModule({
+    id: 'makeready', version: V, requires: ['schedule', 'logic', 'lookahead'], provides: ['makeReady'],
+    run: function (model) {
+      var st = {}, nm = {};
+      model.schedule.activities.forEach(function (a) { st[a.id] = a.status; nm[a.id] = a.name; });
+      var predsBySucc = {}; model.logic.relationships.forEach(function (r) { (predsBySucc[r.succId] = predsBySucc[r.succId] || []).push(r.predId); });
+      function readiness(id) {
+        var ps = predsBySucc[id] || []; if (!ps.length) return { state: 'READY', waitingOn: null };
+        var notStarted = ps.filter(function (p) { return (st[p] || 'not_started') === 'not_started'; });
+        var inProg = ps.filter(function (p) { return st[p] === 'in_progress'; });
+        if (notStarted.length) return { state: 'BLOCKED', waitingOn: notStarted[0] };
+        if (inProg.length) return { state: 'ATTENTION', waitingOn: inProg[0] };
+        return { state: 'READY', waitingOn: null };
+      }
+      var readinessById = {};
+      model.schedule.activities.forEach(function (a) {
+        var rd = readiness(a.id);
+        readinessById[a.id] = { state: rd.state, waitingOn: rd.waitingOn, waitingOnName: rd.waitingOn ? (nm[rd.waitingOn] || null) : null };
+      });
+      var dist = { READY: 0, ATTENTION: 0, BLOCKED: 0 };
+      (model.lookahead.bands[8] || { rows: [] }).rows.forEach(function (r) { dist[readinessById[r.id].state]++; });
+      return { makeReady: {
+        constraints: ['materials', 'approvals/info', 'crew', 'plant', 'space/access', 'external'],
+        readinessById: readinessById, distribution: dist,
+        note: 'A make-ready heads-up, separate from the schedule colours. The programme speaks the truth through red-for-critical; this light is only about whether upcoming work is clear to go. The call is always yours.' } };
+    }
+  });
+
+});
+
+</script>
+<script>
+/* ---- app/sketchpad.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — Quick Action Plan storage, layout + crypto
+ * Storage: a fast localStorage working-cache, WRITTEN THROUGH to IndexedDB for
+ * durable, large-capacity storage; on load it reconciles from IndexedDB so a
+ * cleared cache is restored. Backups: real WebCrypto AES-GCM, key derived from
+ * the user's passphrase with PBKDF2 (600k) — protection, not theatre.
+ * The sketch itself has NO scheduling engine: it is not a site programme.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+  var KEY = 'rhu_sketches';
+  var MAX = 20;
+  var DB = 'rhu_db', STORE = 'sketches';
+
+  /* ---- localStorage working-cache (sync) ---- */
+  function lsAll() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+  function lsWrite(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
+
+  /* ---- IndexedDB (durable, large) ---- */
+  function openDB() {
+    return new Promise(function (res) {
+      try {
+        if (!root.indexedDB) return res(null);
+        var r = root.indexedDB.open(DB, 1);
+        r.onupgradeneeded = function (e) { var db = e.target.result; if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' }); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+  }
+  function idbPut(sketch) { openDB().then(function (db) { if (!db) return; try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(sketch); } catch (e) {} }); }
+  function idbDelete(id) { openDB().then(function (db) { if (!db) return; try { db.transaction(STORE, 'readwrite').objectStore(STORE).delete(id); } catch (e) {} }); }
+  function idbAll() {
+    return openDB().then(function (db) {
+      if (!db) return [];
+      return new Promise(function (res) { try { var q = db.transaction(STORE, 'readonly').objectStore(STORE).getAll(); q.onsuccess = function () { res(q.result || []); }; q.onerror = function () { res([]); }; } catch (e) { res([]); } });
+    });
+  }
+  function reconcile() {
+    return idbAll().then(function (durable) {
+      if (!durable || !durable.length) return;
+      var cache = lsAll(), byId = {}; cache.forEach(function (s) { byId[s.id] = true; });
+      var merged = cache.slice(); durable.forEach(function (s) { if (!byId[s.id]) merged.push(s); });
+      if (merged.length !== cache.length) lsWrite(merged);
+    }).catch(function () {});
+  }
+
+  /* ---- public storage API (sync cache + write-through to IndexedDB) ---- */
+  function load() { return lsAll(); }
+  function saveSketch(sketch) {
+    sketch.savedAt = Date.now(); if (!sketch.id) sketch.id = 's' + sketch.savedAt;
+    var list = lsAll(), i = -1; for (var k = 0; k < list.length; k++) if (list[k].id === sketch.id) i = k;
+    if (i >= 0) list[i] = sketch; else list.push(sketch);
+    lsWrite(list); idbPut(sketch);
+    return sketch;
+  }
+  function deleteSketch(id) { lsWrite(lsAll().filter(function (s) { return s.id !== id; })); idbDelete(id); }
+
+  /* ---- layout (relative before/alongside/after) ---- */
+  function layout(activities) {
+    var bars = [], prev = null;
+    (activities || []).slice(0, MAX).forEach(function (a) {
+      var len = Math.max(1, parseInt(a.length, 10) || 1);
+      var start;
+      if (!prev) start = 0;
+      else if (a.placement === 'alongside') start = prev.start;
+      else if (a.placement === 'before') start = Math.max(0, prev.start - len);
+      else start = prev.start + prev.length;
+      var bar = { name: (a.name || '').slice(0, 60), start: start, length: len, placement: a.placement || 'after', colour: a.colour || 'steel' };
+      bars.push(bar); prev = bar;
+    });
+    var span = bars.reduce(function (m, b) { return Math.max(m, b.start + b.length); }, 1);
+    return { bars: bars, span: span };
+  }
+
+  /* ---- WebCrypto AES-GCM backup (passphrase-derived key, PBKDF2 600k) ---- */
+  function hasWebCrypto() { return !!(root.crypto && root.crypto.subtle); }
+  function enc(s) { return new TextEncoder().encode(s); }
+  function b64(buf) { var a = new Uint8Array(buf), s = ''; for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s); }
+  function unb64(s) { var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+  function deriveKey(pass, salt) {
+    return root.crypto.subtle.importKey('raw', enc(pass), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+      return root.crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    });
+  }
+  function encryptBackup(obj, pass) {
+    var salt = root.crypto.getRandomValues(new Uint8Array(16)), iv = root.crypto.getRandomValues(new Uint8Array(12));
+    return deriveKey(pass, salt).then(function (key) { return root.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc(JSON.stringify(obj))); })
+      .then(function (ct) { return JSON.stringify({ app: 'RippleHeadsUp', v: 1, alg: 'AES-GCM-256', kdf: 'PBKDF2-SHA256-600000', salt: b64(salt), iv: b64(iv), data: b64(ct) }); });
+  }
+  function decryptBackup(cipherStr, pass) {
+    var o = JSON.parse(cipherStr);
+    return deriveKey(pass, unb64(o.salt)).then(function (key) { return root.crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(o.iv) }, key, unb64(o.data)); })
+      .then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
+  }
+
+  reconcile();
+
+  root.RHU_SKETCH = {
+    KEY: KEY, MAX: MAX, layout: layout,
+    load: load, saveSketch: saveSketch, deleteSketch: deleteSketch,
+    hasWebCrypto: hasWebCrypto, encryptBackup: encryptBackup, decryptBackup: decryptBackup
+  };
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<script>
+/* ---- app/selftest.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — user-runnable self-test (architecture rule 4: must be able to FAIL)
+ * Drives a KNOWN-ANSWER programme through the whole live pipeline and checks the
+ * results the foreman actually relies on. If any engine drifts, this goes red.
+ * Known answer: 5-task programme, FS chain T1->T2->T3 at zero float = the driving
+ * path {1,2,3}; T4,T5 carry 2 days float (off-path); one orphan link (pred 99).
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+
+  // dates relative to today so the fixture lands inside the look-ahead window
+  function d(offsetDays) { var x = new Date(); x.setHours(8, 0, 0, 0); x.setDate(x.getDate() + offsetDays); return x.toISOString().slice(0, 19); }
+  function task(uid, name, s, f, durH, slackTenths, preds) {
+    var p = (preds || []).map(function (u) { return '<PredecessorLink><PredecessorUID>' + u + '</PredecessorUID><Type>1</Type><LinkLag>0</LinkLag></PredecessorLink>'; }).join('');
+    return '<Task><UID>' + uid + '</UID><ID>' + uid + '</ID><Name>' + name + '</Name><Summary>0</Summary><Manual>0</Manual>' +
+      '<Start>' + s + '</Start><Finish>' + f + '</Finish><Duration>PT' + durH + 'H0M0S</Duration><PercentComplete>0</PercentComplete>' +
+      '<TotalSlack>' + slackTenths + '</TotalSlack>' + p + '</Task>';
+  }
+  var FIXTURE = [
+    '<?xml version="1.0"?>',
+    '<Project xmlns="http://schemas.microsoft.com/project"><Name>Ripple Heads-Up self-test</Name><MinutesPerDay>480</MinutesPerDay>',
+    '<Calendars><Calendar><UID>1</UID><Name>Standard</Name><IsBaseCalendar>1</IsBaseCalendar>',
+    '<WeekDays>',
+    '<WeekDay><DayType>2</DayType><DayWorking>1</DayWorking></WeekDay>',
+    '<WeekDay><DayType>7</DayType><DayWorking>0</DayWorking></WeekDay>',
+    '</WeekDays></Calendar></Calendars>',
+    '<Tasks>',
+    task(1, 'Groundworks', d(1), d(5), 40, 0, []),            // driving chain, zero float
+    task(2, 'Foundations', d(8), d(12), 40, 0, [1]),
+    task(3, 'Slab', d(15), d(19), 40, 0, [2]),
+    task(4, 'Site cabin', d(8), d(10), 24, 9600, [1]),          // off-path, 2 days float (9600 tenths = 16h)
+    task(5, 'Hoarding', d(11), d(12), 16, 9600, [4, 99]),       // off-path + ORPHAN pred 99 (absent) -> dropped+reported
+    '</Tasks></Project>'
+  ].join('\n');
+
+  var EXPECT = { activities: 5, drivingCount: 3, drivingIds: ['1', '2', '3'], orphanLinks: 1, minFloatHr: 0 };
+
+  function run() {
+    var checks = [];
+    function ck(name, pass, detail) { checks.push({ name: name, pass: !!pass, detail: detail || '' }); }
+    try {
+      var m = root.RIPPLE_CORE.run({ kind: 'MSP', text: FIXTURE, fileName: 'selftest.xml' });
+      ck('all 5 activities parsed', m.schedule.activities.length === EXPECT.activities, m.schedule.activities.length + '');
+      var ids = Object.keys(m.driving.set).sort();
+      ck('driving path is exactly {1,2,3}', m.driving.count === EXPECT.drivingCount && JSON.stringify(ids) === JSON.stringify(EXPECT.drivingIds), ids.join(','));
+      ck('driving taken from stored float (0h)', m.driving.minFloatHr === EXPECT.minFloatHr, m.driving.minFloatHr + 'h');
+      ck('off-path float read as 2.0 days', (function () { var la = m.lookahead.bands[8].rows.find(function (r) { return r.id === '4'; }); return la && la.floatDays === 2; })());
+      ck('orphan link (pred 99) dropped + reported', m.logic.droppedLinks.length === EXPECT.orphanLinks, m.logic.droppedLinks.length + '');
+      ck('look-ahead bands built', !!(m.lookahead && m.lookahead.bands[2] && m.lookahead.bands[8]));
+      ck('Held-by resolved (task 2 held by 1)', (function () { var r = m.lookahead.bands[8].rows.find(function (x) { return x.id === '2'; }); return r && String(r.heldBy) === '1'; })());
+      ck('make-ready computed', !!(m.makeReady && m.makeReady.distribution));
+      ck('provenance recorded for every slot', ['schedule', 'logic', 'driving', 'lookahead', 'makeReady'].every(function (s) { return m._provenance[s]; }));
+    } catch (e) {
+      ck('pipeline ran without throwing', false, e.message);
+    }
+    var ok = checks.every(function (c) { return c.pass; });
+    return { ok: ok, checks: checks, passed: checks.filter(function (c) { return c.pass; }).length, total: checks.length };
+  }
+
+  root.RIPPLE_SELFTEST = { run: run, FIXTURE: FIXTURE };
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<script>
+/* ---- app/app.js ---- */
+/* ============================================================================
+ * Ripple Heads-Up — UI layer
+ * The foreman's side of the screen. Reads the model the core produces; owns no
+ * scheduling logic of its own.
+ * Revision comes from window.RIPPLE_REV (single source of truth at top of file).
+ * ========================================================================== */
+(function () {
+  'use strict';
+  // Prefer the single global, then core, then hard fallback
+  var REV = (window.RIPPLE_REV) || (window.RIPPLE_CORE && window.RIPPLE_CORE.rev) || '0.1.0';
+  try { document.title = 'Ripple Heads-Up — Rev ' + REV; } catch (e) {}
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var el = function (tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  // Ripple Heads-Up mark: schedule bars under a hi-vis hard hat \u2014 site look-ahead.
+  var ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+    '<rect x="56" y="56" width="400" height="400" rx="104" fill="#0C2A3D"/>' +
+    '<rect x="150" y="270" width="150" height="30" rx="15" fill="#4593CC"/>' +
+    '<rect x="150" y="316" width="206" height="30" rx="15" fill="#63ADE2"/>' +
+    '<rect x="150" y="362" width="120" height="30" rx="15" fill="#4593CC"/>' +
+    '<path d="M202 214 A 54 54 0 0 1 310 214 Z" fill="#F2A900"/>' +
+    '<rect x="164" y="208" width="184" height="20" rx="10" fill="#F2A900"/>' +
+    '<rect x="248" y="158" width="16" height="56" rx="8" fill="#0C2A3D" opacity="0.18"/>' +
+    '</svg>';
+  function iconEl(cls) { var img = el('img', cls || 'app-icon'); img.src = 'data:image/svg+xml,' + encodeURIComponent(ICON_SVG); img.alt = 'Ripple Heads-Up'; return img; }
+  function sha(str) { try { return window.AMELIE_SHA256 ? window.AMELIE_SHA256.sha256(String(str)) : ''; } catch (e) { return ''; } }
+  function shortHash(h) { return h ? h.slice(0, 12) : ''; }
+
+  // ticks, openNotes, dropped/hidden, chaseNotes, customChase, sketch: foreman-owned, local — never written back into the programme
+  var state = {
+    model: null, band: 4, ticks: {}, openNotes: {}, dropped: {}, showHidden: false,
+    chaseNotes: {}, customChase: [],
+    sketch: { id: null, title: '', preparedBy: '', startDate: '', activities: [] }
+  };
+
+  /* ---------- region: date format + week-start (display only; never touches the programme) ---------- */
+  var REGIONS = {
+    UK:   { label: 'UK / Europe', order: 'DMY', weekStart: 1 },   // Monday
+    GULF: { label: 'Gulf',        order: 'DMY', weekStart: 0 },   // Sunday
+    US:   { label: 'US',          order: 'MDY', weekStart: 0 }    // Sunday
+  };
+  function loadRegion() { try { return localStorage.getItem('rhu_region') || null; } catch (e) { return null; } }
+  function saveRegion(r) { try { localStorage.setItem('rhu_region', r); } catch (e) {} }
+  state.region = loadRegion();
+  function region() { return REGIONS[state.region] || REGIONS.UK; }
+  function progWord() { return state.region === 'US' ? 'schedule' : 'programme'; }
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function pdateObj(s) { if (!s) return null; var d = new Date(String(s).replace(' ', 'T')); return isNaN(d) ? null : d; }
+
+  /* ---------- format detection ---------- */
+  function detectKind(text, name) {
+    // Microsoft Project XML (also the usual Asta Powerproject "Export to Microsoft Project" XML)
+    if (/schemas\.microsoft\.com\/project/i.test(text)) return 'MSP';
+    // Primavera P6 XER (Asta can also export XER)
+    if (/ERMHDR|%T\s+TASK/.test(text)) return 'XER';
+    // Primavera P6 XML — not supported as a native reader yet; fail closed with a clear message
+    if (/xmlns\.oracle\.com\/Primavera|APIBusinessObjects/i.test(text)) {
+      throw new Error('This looks like a Primavera P6 XML. Export from Asta as Microsoft Project XML, or from P6 as an XER, then load that.');
+    }
+    if (/\.xml$/i.test(name || '')) return 'MSP';
+    return 'CSV';
+  }
+
+  /* ---------- screens ---------- */
+  function showRegionPick() {
+    var app = $('#app'); app.innerHTML = '';
+    var wrap = el('div', 'gate');
+    wrap.appendChild(iconEl('gate-icon'));
+    wrap.appendChild(el('div', 'gate-eyebrow', 'One quick thing'));
+    wrap.appendChild(el('h1', 'gate-title', 'Where are you working?'));
+    wrap.appendChild(el('p', 'gate-lead', 'This sets how dates read and which day the week starts on, so the screen matches how you write dates on site. It never changes the dates in your programme \u2014 only how they show here.'));
+    var opts = el('div', 'region-opts');
+    [['UK', 'UK / Europe', '09 Nov 2026  \u00b7  week starts Monday'],
+     ['GULF', 'Gulf', '09 Nov 2026  \u00b7  week starts Sunday'],
+     ['US', 'US', 'Nov 09 2026  \u00b7  week starts Sunday']].forEach(function (r) {
+      var b = el('button', 'region-btn');
+      b.appendChild(el('div', 'region-name', r[1]));
+      b.appendChild(el('div', 'region-eg', r[2]));
+      b.onclick = function () { state.region = r[0]; saveRegion(r[0]); state.model ? render() : showGate(); };
+      opts.appendChild(b);
+    });
+    wrap.appendChild(opts);
+    wrap.appendChild(el('div', 'gate-mantra', 'Time for a change.'));
+    app.appendChild(wrap);
+  }
+
+  function showGate() {
+    var app = $('#app'); app.innerHTML = '';
+    var wrap = el('div', 'gate');
+    wrap.appendChild(iconEl('gate-icon'));
+    wrap.appendChild(el('div', 'gate-brand', 'RIPPLE \u2014 CONSTRUCTION SITE HEADS-UP'));
+    wrap.appendChild(el('div', 'gate-mantra', 'Time for a change.'));
+    var regTop = el('div', 'gate-region');
+    regTop.appendChild(el('span', 'gate-region-lab', 'Region'));
+    ['UK', 'GULF', 'US'].forEach(function (rk) {
+      var rb = el('button', 'gate-region-btn' + (state.region === rk ? ' on' : ''), REGIONS[rk].label);
+      rb.onclick = function () { state.region = rk; saveRegion(rk); showGate(); };
+      regTop.appendChild(rb);
+    });
+    wrap.appendChild(regTop);
+    wrap.appendChild(el('div', 'gate-eyebrow', 'Before you load anything'));
+    wrap.appendChild(el('h1', 'gate-title', 'You need the site\u2019s approved ' + progWord() + '.'));
+    var p1 = el('p', 'gate-lead');
+    p1.textContent = 'Ripple Heads-Up lays out your next few weeks straight from the ' + progWord() + ' your site is run to \u2014 the approved one the planner keeps. It reads that ' + progWord() + '. It doesn\u2019t build one, and it doesn\u2019t replace the master ' + progWord() + ' the job runs to.';
+    wrap.appendChild(p1);
+    var ul = el('ul', 'gate-list');
+    [
+      ['XER gives everything', 'the look-ahead, the Held-by ripple, the driving path. From P6 or from Asta exported as XER.'],
+      ['Microsoft Project / Asta XML', 'MSP: File \u2192 Save As \u2192 XML. Asta: File \u2192 Import/Export \u2192 Export to Microsoft Project \u2192 XML. Native .mpp / .pp are not read directly.'],
+      ['A CSV works too', 'but many exports drop the logic links. When they do, the ripple steps aside and the app says so \u2014 the look-ahead and lists still work.'],
+      ['It has to be current', 'this tool is only as good as the ' + progWord() + ' you feed it. If it hasn\u2019t been updated, trust the ground over this screen.']
+    ].forEach(function (r) { var li = el('li'); li.appendChild(el('strong', null, r[0] + ' \u2014 ')); li.appendChild(document.createTextNode(r[1])); ul.appendChild(li); });
+    wrap.appendChild(ul);
+    var warn = el('p', 'gate-warn', 'If you don\u2019t have the approved ' + progWord() + ', this app can\u2019t help you \u2014 don\u2019t buy it on the hope that it will.');
+    wrap.appendChild(warn);
+    var btn = el('button', 'btn btn-primary', 'I have the approved ' + progWord() + ' \u2014 load it');
+    btn.onclick = showImport; wrap.appendChild(btn);
+    var help = el('button', 'btn gate-help', 'Help & tips \u2014 how you might use it');
+    help.onclick = showHelp; wrap.appendChild(help);
+    var supMail = (window.RIPPLE_SUPPORT_EMAIL || '').trim();
+    if (supMail) {
+      var sup = el('button', 'btn gate-help', 'Support \u2014 ' + supMail);
+      sup.onclick = function () {
+        try { window.location.href = 'mailto:' + encodeURIComponent(supMail) + '?subject=' + encodeURIComponent('Ripple Heads-Up support (Rev ' + (window.RIPPLE_REV || '') + ')'); } catch (e) {}
+      };
+      wrap.appendChild(sup);
+    }
+    var sk = el('button', 'btn gate-help', 'Quick Action Plan \u2014 no ' + progWord() + ' needed');
+    sk.onclick = showSketch; wrap.appendChild(sk);
+    var sup = el('button', 'btn gate-help', 'Suppliers near you \u2014 concrete, scaffolding, plant');
+    sup.onclick = showSuppliers; wrap.appendChild(sup);
+    app.appendChild(wrap);
+  }
+
+  function showImport() {
+    var app = $('#app'); app.innerHTML = '';
+    var wrap = el('div', 'import');
+    if (state.model) { var back = el('button', 'btn gate-help import-back', '\u2190 Back to the look-ahead'); back.onclick = function () { render(); }; wrap.appendChild(back); }
+    wrap.appendChild(el('div', 'import-eyebrow', 'Load your approved programme'));
+    wrap.appendChild(el('h2', 'import-title', 'Drop the file, or choose it.'));
+    var drop = el('label', 'dropzone');
+    drop.appendChild(el('div', 'dropzone-mark', '\u2193'));
+    drop.appendChild(el('div', 'dropzone-text', 'XER  \u00b7  MSP XML  \u00b7  Asta (MSP XML / XER)  \u00b7  CSV'));
+    var input = el('input'); input.type = 'file'; input.accept = '.xer,.xml,.csv'; input.style.display = 'none';
+    input.onchange = function () { if (input.files[0]) loadFile(input.files[0]); };
+    drop.appendChild(input);
+    wrap.appendChild(drop);
+    var hint = el('p', 'import-hint', 'Testing on the free trial? Load your own real exports now and prove it works with your files \u2014 especially CSV \u2014 before the trial ends.');
+    wrap.appendChild(hint);
+    var stbtn = el('button', 'btn btn-ghost import-st', 'Run the engine self-test');
+    stbtn.onclick = runSelfTest; wrap.appendChild(stbtn);
+    app.appendChild(wrap);
+    ['dragover', 'dragenter'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  }
+
+  function loadFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var text = reader.result, kind = detectKind(text, file.name);
+        state.model = window.RIPPLE_CORE.run({ kind: kind, text: text, fileName: file.name, region: state.region || 'UK' });
+        state.ticks = {}; state.openNotes = {}; state.dropped = {}; state.showHidden = false;
+        state.chaseNotes = {}; state.customChase = []; render();
+      } catch (e) { showError(e.message); }
+    };
+    reader.readAsText(file);
+  }
+
+  function showError(msg) {
+    var app = $('#app'); app.innerHTML = '';
+    var w = el('div', 'errbox');
+    w.appendChild(el('div', 'err-eyebrow', 'That didn\u2019t load'));
+    w.appendChild(el('p', 'err-msg', msg));
+    var b = el('button', 'btn', 'Try another file'); b.onclick = showImport; w.appendChild(b);
+    app.appendChild(w);
+  }
+
+  /* ---------- main render ---------- */
+  function fmtDate(s) { var d = pdateObj(s); if (!d) return '\u2014'; var day = ('0' + d.getDate()).slice(-2), mon = MONTHS[d.getMonth()], yr = d.getFullYear(); return region().order === 'MDY' ? (mon + ' ' + day + ' ' + yr) : (day + ' ' + mon + ' ' + yr); }
+  function daysAgoLabel(n) { return n == null ? 'no data date' : (n <= 0 ? 'today' : n + (n === 1 ? ' day old' : ' days old')); }
+  function fmtDay(s) { var d = pdateObj(s); if (!d) return '\u2014'; var day = ('0' + d.getDate()).slice(-2), mon = MONTHS[d.getMonth()]; return region().order === 'MDY' ? (mon + ' ' + day) : (day + ' ' + mon); }
+  function weekKey(s) { var d = pdateObj(s); if (!d) return 'zzz-undated'; var ws = region().weekStart, diff = (d.getDay() - ws + 7) % 7, m = new Date(d); m.setDate(d.getDate() - diff); return m.toISOString().slice(0, 10); }
+
+  function render() {
+    var m = state.model, app = $('#app'); app.innerHTML = '';
+    app.appendChild(headerBar(m));
+    app.appendChild(currencyBanner(m));
+    app.appendChild(bandTabs());
+    app.appendChild(lookaheadTable(m));
+    var foot = el('div', 'app-foot');
+    foot.appendChild(document.createTextNode('Ripple Heads-Up \u00b7 Rev ' + REV + ' \u00b7 '));
+    foot.appendChild(el('span', 'mantra', 'Time for a change'));
+    app.appendChild(foot);
+  }
+
+  function headerBar(m) {
+    var h = el('header', 'topbar');
+    var left = el('div', 'topbar-left');
+    left.onclick = function () { if (state.model) render(); };
+    left.appendChild(iconEl('topbar-icon'));
+    left.appendChild(el('span', 'brand', 'RIPPLE HEADS-UP'));
+    left.appendChild(el('span', 'rev', 'Rev ' + REV));
+    h.appendChild(left);
+    var right = el('div', 'topbar-right');
+    right.appendChild(el('span', 'prog-name', m.schedule.name || 'Programme'));
+    var sk = el('button', 'btn btn-ghost', 'Quick plan'); sk.onclick = showSketch; right.appendChild(sk);
+    var su = el('button', 'btn btn-ghost', 'Suppliers'); su.onclick = showSuppliers; right.appendChild(su);
+    var hp = el('button', 'btn btn-ghost', 'Help'); hp.onclick = showHelp; right.appendChild(hp);
+    if ((window.RIPPLE_SUPPORT_EMAIL || '').trim()) {
+      var su = el('button', 'btn btn-ghost', 'Support');
+      su.title = window.RIPPLE_SUPPORT_EMAIL;
+      su.onclick = function () {
+        try { window.location.href = 'mailto:' + encodeURIComponent(window.RIPPLE_SUPPORT_EMAIL) + '?subject=' + encodeURIComponent('Ripple Heads-Up support (Rev ' + (window.RIPPLE_REV || '') + ')'); } catch (e) {}
+      };
+      right.appendChild(su);
+    }
+    var st = el('button', 'btn btn-ghost', 'Self-test'); st.onclick = runSelfTest; right.appendChild(st);
+    var b = el('button', 'btn btn-ghost', 'New file'); b.onclick = showImport; right.appendChild(b);
+    h.appendChild(right);
+    return h;
+  }
+
+  function runSelfTest() {
+    var r = window.RIPPLE_SELFTEST.run();
+    var app = $('#app');
+    var overlay = el('div', 'st-overlay');
+    overlay.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+    var card = el('div', 'st-card ' + (r.ok ? 'st-ok' : 'st-fail'));
+    card.addEventListener('click', function (e) { e.stopPropagation(); });
+    card.appendChild(el('div', 'st-eyebrow', r.ok ? 'Self-test passed' : 'Self-test FAILED'));
+    card.appendChild(el('div', 'st-score', r.passed + ' / ' + r.total + ' checks'));
+    var list = el('div', 'st-list');
+    r.checks.forEach(function (c) {
+      var row = el('div', 'st-row');
+      row.appendChild(el('span', 'st-mark st-' + (c.pass ? 'p' : 'f'), c.pass ? '\u2713' : '\u2717'));
+      row.appendChild(el('span', 'st-name', c.name + (c.detail && !c.pass ? ' (' + c.detail + ')' : '')));
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    card.appendChild(el('div', 'st-note', r.ok
+      ? 'The engine matches the known answer. You can trust the numbers on screen.'
+      : 'The engine disagrees with the known answer \u2014 don\u2019t trust the numbers until this is green.'));
+    var close = el('button', 'btn', 'Close');
+    close.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+    card.appendChild(close);
+    overlay.appendChild(card); app.appendChild(overlay);
+  }
+
+  // The signature: the honest headline. How much room, when the pressure starts.
+  function currencyBanner(m) {
+    var c = m.currency, d = m.driving, la = m.lookahead;
+    var band = la.bands[state.band], tight = band.tightestFloatDays;
+    var b = el('section', 'headline' + (c.stale ? ' headline-stale' : ''));
+    var line1 = el('div', 'headline-main');
+    if (!d.available) {
+      line1.textContent = 'This file carries no float, so the driving path can\u2019t be shown \u2014 the look-ahead and lists still work.';
+    } else if (tight == null) {
+      line1.textContent = 'No work falls in this window.';
+    } else if (tight > 40) {
+      line1.appendChild(el('strong', null, 'You\u2019ve got room. '));
+      line1.appendChild(document.createTextNode('The tightest work in your next ' + state.band + ' weeks has ' + tight + ' days of float. '));
+      line1.appendChild(el('span', 'hl-accent', d.drivingStartsOn ? 'The critical path doesn\u2019t start until ' + fmtDate(la.drivingStartsOn) + '.' : ''));
+    } else if (tight > 10) {
+      line1.appendChild(document.createTextNode('Watch it. The tightest work in your next ' + state.band + ' weeks has '));
+      line1.appendChild(el('strong', null, tight + ' days of float'));
+      line1.appendChild(document.createTextNode('.'));
+    } else {
+      line1.appendChild(el('strong', 'hl-tight', 'Tight. '));
+      line1.appendChild(document.createTextNode('The tightest work in your next ' + state.band + ' weeks has only ' + tight + ' days of float \u2014 protect it.'));
+    }
+    b.appendChild(line1);
+    var meta = el('div', 'headline-meta');
+    meta.appendChild(chip('Programme data date', fmtDate(c.dataDate) + ' \u00b7 ' + daysAgoLabel(c.ageDays)));
+    if (c.completed) meta.appendChild(chip('Completed', c.completed + ' activities'));
+    if (d.available) meta.appendChild(chip('Driving path', d.count + ' activities \u00b7 ' + d.confidence.split(' \u2014')[0]));
+    if (m.logic.droppedLinks.length) meta.appendChild(chip('Dropped links', m.logic.droppedLinks.length + ' (dangling logic, reported)', 'warn'));
+    if (m.schedule.sourceHash) meta.appendChild(chip('Programme fingerprint', shortHash(m.schedule.sourceHash) + '\u2026'));
+    b.appendChild(meta);
+    if (c.stale) b.appendChild(el('div', 'stale-note', 'This programme is ' + c.ageDays + ' days old. It\u2019s the programme as the planner left it \u2014 if it isn\u2019t current, trust the ground over this screen.'));
+    if (c.remainingInPast) b.appendChild(el('div', 'stale-note', c.remainingInPast + ' remaining activities are dated before the data date \u2014 a sign the programme may not have been rescheduled.'));
+    var chase = el('div', 'currency-chase');
+    chase.appendChild(el('span', 'chase-note', 'Not sure this is the latest? Check when the programme was last updated before you rely on it \u2014 and chase whoever issues it.'));
+    var cb = el('button', 'btn chase-btn', 'Chase the planner for the latest'); cb.onclick = function () { chasePlanner(m); };
+    chase.appendChild(cb);
+    b.appendChild(chase);
+    return b;
+  }
+  function chasePlanner(m) {
+    var proj = (m && m.schedule && m.schedule.name) || 'the project';
+    var subject = 'Latest programme please \u2014 ' + proj;
+    var body = 'Hi,\n\nPlease send me the latest updated programme for ' + proj + ' \u2014 an XER out of P6, or a Save-As XML out of Microsoft Project. I use it to keep the site look-ahead current.\n\nWhat data date should I be working to, and when was it last updated?\n\nThanks.';
+    var to = ''; try { to = localStorage.getItem('rhu_planner_email') || ''; } catch (e) {}
+    if (!to && typeof window.prompt === 'function') { to = window.prompt('Email of whoever issues your programme (saved for next time):', '') || ''; if (to) { try { localStorage.setItem('rhu_planner_email', to); } catch (e) {} } }
+    try { window.location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body); } catch (e) {}
+  }
+  function chip(label, val, mod) { var c = el('div', 'chip' + (mod ? ' chip-' + mod : '')); c.appendChild(el('span', 'chip-label', label)); c.appendChild(el('span', 'chip-val', val)); return c; }
+
+  function bandTabs() {
+    var t = el('nav', 'bands');
+    [2, 4, 6, 8].forEach(function (w) {
+      var b = el('button', 'band' + (state.band === w ? ' band-on' : ''), w + ' wk');
+      b.onclick = function () { state.band = w; render(); }; t.appendChild(b);
+    });
+    return t;
+  }
+
+  function activeRows(band) {
+    return (band.rows || []).filter(function (r) { return !state.dropped[r.id]; });
+  }
+
+  function lookaheadTable(m) {
+    var band = m.lookahead.bands[state.band];
+    var kept = activeRows(band);
+    var hiddenCount = band.count - kept.length;
+    var sec = el('section', 'look');
+
+    // Header
+    var head = el('div', 'look-head');
+    var titleTxt = 'Next ' + state.band + ' weeks \u00b7 ' + kept.length + ' shown';
+    if (hiddenCount) titleTxt += ' \u00b7 ' + hiddenCount + ' hidden';
+    titleTxt += ' \u00b7 most urgent first';
+    head.appendChild(el('div', 'look-title', titleTxt));
+    var actions = el('div', 'look-actions');
+    var issue = el('button', 'btn look-issue', 'Issue list for the men');
+    issue.onclick = function () { showIssueList(m); };
+    actions.appendChild(issue);
+    var chaseN = chaseRows(band).length;
+    var chaseBtn = el('button', 'btn look-issue', chaseN ? ('Chase list (' + chaseN + ')') : 'Chase list');
+    chaseBtn.onclick = function () { showChaseList(m); };
+    actions.appendChild(chaseBtn);
+    if (hiddenCount) {
+      var toggleHidden = el('button', 'btn look-issue', state.showHidden ? 'Hide them again' : ('Show ' + hiddenCount + ' hidden'));
+      toggleHidden.onclick = function () { state.showHidden = !state.showHidden; render(); };
+      actions.appendChild(toggleHidden);
+      var restoreAll = el('button', 'btn look-issue', 'Restore all');
+      restoreAll.onclick = function () { state.dropped = {}; state.showHidden = false; render(); };
+      actions.appendChild(restoreAll);
+    }
+    head.appendChild(actions);
+    sec.appendChild(head);
+
+    sec.appendChild(el('div', 'lite-frame', 'Tap a task (or its light) \u2192 tick materials, crew, plant, access etc. that need looking into. Those ticks go to Chase list for you to itemise. Issue list is for the men. HIDE removes non-domain work from this list and from print.'));
+
+    if (!band.rows.length) {
+      sec.appendChild(el('div', 'empty', 'Nothing scheduled in this window. Widen the band or check the data date.'));
+      return sec;
+    }
+    if (!kept.length && !state.showHidden) {
+      sec.appendChild(el('div', 'empty', 'All activities in this window are hidden. Use \u201cShow ' + hiddenCount + ' hidden\u201d or \u201cRestore all\u201d above.'));
+      return sec;
+    }
+
+    // Which rows to draw: kept always; hidden only when showHidden is on
+    var toShow = state.showHidden ? band.rows : kept;
+    var tbl = el('div', 'rows');
+    toShow.forEach(function (r) {
+      var isHidden = !!state.dropped[r.id];
+      var light = lightFor(r.id);
+      var row = el('div', 'row' + (r.driving ? ' row-driving' : '') + (isHidden ? ' row-dropped' : ''));
+
+      var f = el('div', 'cell cell-float');
+      f.appendChild(el('span', 'float-num', r.floatDays == null ? '\u2014' : r.floatDays));
+      f.appendChild(el('span', 'float-unit', r.floatDays == null ? '' : 'd float'));
+      row.appendChild(f);
+
+      // Activity name — CLICK opens the items-to-address note (same as original light tap)
+      var mid = el('button', 'cell cell-act cell-act-btn' + (state.openNotes[r.id] ? ' is-open' : ''));
+      mid.setAttribute && mid.setAttribute('type', 'button');
+      mid.setAttribute && mid.setAttribute('aria-expanded', state.openNotes[r.id] ? 'true' : 'false');
+      mid.setAttribute && mid.setAttribute('aria-label', 'Open items to address for ' + (r.name || r.id));
+      mid.onclick = function () { toggleNote(r.id); };
+      var nm = el('div', 'act-name');
+      nm.appendChild(el('span', 'act-id', r.id));
+      nm.appendChild(document.createTextNode('  ' + (r.name || '')));
+      if (r.driving) nm.appendChild(el('span', 'driving-tag', 'DRIVING'));
+      if (isHidden) nm.appendChild(el('span', 'dropped-tag', 'HIDDEN'));
+      if (state.openNotes[r.id]) nm.appendChild(el('span', 'dropped-tag', 'OPEN'));
+      mid.appendChild(nm);
+      mid.appendChild(el('div', 'act-held', (r.start ? ('starts ' + fmtDay(r.start) + '  \u00b7  ') : '') + (r.heldBy ? ('held by ' + r.heldBy) : 'open start') + '  \u00b7  tap for items'));
+      row.appendChild(mid);
+
+      // HIDE / RESTORE — removes from list and from print (does NOT open the note)
+      var dc = el('div', 'cell cell-drop');
+      var db = el('button', 'btn-drop' + (isHidden ? ' on' : ''), isHidden ? 'Restore' : 'Hide');
+      db.setAttribute && db.setAttribute('type', 'button');
+      db.setAttribute && db.setAttribute('aria-label', isHidden ? 'Restore to list and print' : 'Hide from list and print — not my gang');
+      db.onclick = function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        if (state.dropped[r.id]) {
+          delete state.dropped[r.id];
+        } else {
+          state.dropped[r.id] = true;
+          if (activeRows(band).length === 0) state.showHidden = false;
+        }
+        render();
+      };
+      dc.appendChild(db);
+      row.appendChild(dc);
+
+      // Coloured light — also opens the items-to-address note
+      var lc = el('button', 'cell cell-light');
+      lc.setAttribute && lc.setAttribute('type', 'button');
+      lc.appendChild(el('span', 'lite lite-' + light.c));
+      lc.setAttribute && lc.setAttribute('aria-label', 'make-ready: ' + light.c + ' — tap for items to address');
+      lc.onclick = function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        toggleNote(r.id);
+      };
+      row.appendChild(lc);
+
+      tbl.appendChild(row);
+      if (state.openNotes[r.id]) tbl.appendChild(considerationNote(r.id));
+    });
+    sec.appendChild(tbl);
+    return sec;
+  }
+
+  /* ---------- make-ready light + considerations (on every look-ahead row) ---------- */
+  // Combined readiness: the programme logic AND the foreman's own constraint ticks.
+  function lightFor(actId) {
+    var mr = (state.model && state.model.makeReady) || {};
+    var rd = (mr.readinessById || {})[actId] || { state: 'READY' };
+    if (rd.state === 'BLOCKED') return { c: 'red', logic: rd };
+    if (rd.state === 'ATTENTION') return { c: 'amber', logic: rd };
+    // Ticks = items flagged for chase ("needs looking into"), not "cleared"
+    if (flaggedConstraints(actId).length) return { c: 'amber', logic: rd };
+    return { c: 'green', logic: rd };
+  }
+
+  // The note: states the fact, offers points to weigh, hands the call back. Never an instruction.
+  // Opened by clicking the TASK NAME or the coloured light — same as the original app.
+  function considerationNote(actId) {
+    var info = lightFor(actId), rd = info.logic, t = state.ticks[actId] || {};
+    var mr = (state.model && state.model.makeReady) || {};
+    var constraints = mr.constraints || ['materials', 'approvals/info', 'crew', 'plant', 'space/access', 'external'];
+    var wrap = el('div', 'row-note note-' + info.c);
+    wrap.appendChild(el('div', 'note-head', info.c === 'green' ? 'Clear' : (info.c === 'red' ? 'Not ready' : 'Getting ready')));
+    var body = el('p', 'note-body');
+    if (rd.state === 'BLOCKED') {
+      body.textContent = 'The programme shows ' + (rd.waitingOnName ? (rd.waitingOnName + ' (' + rd.waitingOn + ')') : ('activity ' + rd.waitingOn)) + ' hasn\u2019t started. That can hold up what\u2019s behind it. What you do about it is your call.';
+    } else if (rd.state === 'ATTENTION') {
+      body.textContent = 'The programme shows the job feeding this is still running. To be ready you\u2019d want materials, crew and access lined up so it can go when its turn comes. Your call when.';
+    } else if (info.c === 'green') {
+      body.textContent = 'Programme\u2019s clear \u2014 the work before this is done and you have not flagged anything for chase. Whether to start it now is your call.';
+    } else {
+      body.textContent = 'Programme\u2019s clear on logic. Tick any item below that needs looking into \u2014 materials, crew, plant, access and the rest. Those ticks go onto YOUR chase list so you can itemise what must be done. Your call.';
+    }
+    wrap.appendChild(body);
+    var ticks = el('div', 'note-ticks');
+    constraints.forEach(function (c) {
+      var chip = el('button', 'tick' + (t[c] ? ' tick-on' : ''), c);
+      chip.title = t[c] ? 'Flagged for chase \u2014 click to clear' : 'Click to flag for chase';
+      chip.onclick = function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        state.ticks[actId] = state.ticks[actId] || {};
+        state.ticks[actId][c] = !state.ticks[actId][c];
+        render();
+      };
+      ticks.appendChild(chip);
+    });
+    wrap.appendChild(ticks);
+    if (flaggedConstraints(actId).length) {
+      wrap.appendChild(el('div', 'note-foot', 'Flagged for chase: ' + flaggedConstraints(actId).join(', ') + ' \u2014 open Chase list to itemise.'));
+    } else {
+      wrap.appendChild(el('div', 'note-foot', 'Your call \u2014 never the app\u2019s.'));
+    }
+    return wrap;
+  }
+
+  function toggleNote(actId) {
+    state.openNotes[actId] = !state.openNotes[actId];
+    render();
+  }
+
+  /* ---------- issue list (print / share to the men) ---------- */
+  function constraintList() {
+    var mr = (state.model && state.model.makeReady) || {};
+    return mr.constraints || ['materials', 'approvals/info', 'crew', 'plant', 'space/access', 'external'];
+  }
+  // Tick on the look-ahead = "needs looking into" → must appear on the CHASE list.
+  // Unticked = not flagged (nothing to chase for that item).
+  function flaggedConstraints(actId) {
+    var t = state.ticks[actId] || {};
+    return constraintList().filter(function (c) { return !!t[c]; });
+  }
+  function hasAnyTick(actId) {
+    return flaggedConstraints(actId).length > 0;
+  }
+  // Kept for older call sites: "all clear" means nothing flagged for chase
+  function openConstraints(actId) {
+    return flaggedConstraints(actId);
+  }
+  function allConstraintsTicked(actId) {
+    return flaggedConstraints(actId).length === 0;
+  }
+
+  // Issue-list status: programme facts first. Constraint detail only if the supervisor has started ticking.
+  function statusWord(actId) {
+    var l = lightFor(actId), rd = l.logic;
+    if (rd.state === 'BLOCKED' || l.c === 'red') {
+      return 'Not ready \u2014 waiting on ' + (rd.waitingOnName ? rd.waitingOnName + ' (' + rd.waitingOn + ')' : (rd.waitingOn || 'predecessor'));
+    }
+    if (rd.state === 'ATTENTION') {
+      return 'Getting ready \u2014 gating work under way';
+    }
+    // Issue list for the men stays clean — supervisor flags belong on the chase list only
+    return 'On the programme';
+  }
+
+  // Why an activity belongs on the CHASE list (null = does not belong)
+  // Unticked constraints alone do NOT put routine work on the chase list —
+  // that was why both lists looked the same.
+  // Only the FRONTIER of a blocked chain goes on the chase list.
+  // If A holds B holds C and A has not started, B and C are blocked by a blocked predecessor —
+  // listing all three looks like duplicated activities. Chase the first gap only.
+  function isFrontierBlocked(rd, readinessById) {
+    if (!rd || rd.state !== 'BLOCKED') return false;
+    var predId = rd.waitingOn;
+    if (!predId) return true;
+    var pred = readinessById[predId];
+    // Predecessor also blocked → this activity is mid-chain, skip
+    if (pred && pred.state === 'BLOCKED') return false;
+    return true;
+  }
+
+  function heldCountInBand(holderId, bandRows) {
+    var n = 0;
+    (bandRows || []).forEach(function (r) {
+      if (r.heldBy === holderId) n++;
+    });
+    return n;
+  }
+
+  function chaseReason(r, bandRows) {
+    // CHASE LIST = only what YOU flagged on the look-ahead (materials, crew, plant…).
+    // Programme blocked / gating / critical stay on the look-ahead and the issue list for the men.
+    // They do NOT auto-flood this list — that mixed everything up.
+    var flagged = flaggedConstraints(r.id);
+    if (!flagged.length) return null;
+
+    var mr = (state.model && state.model.makeReady) || {};
+    var readinessById = mr.readinessById || {};
+    var l = lightFor(r.id), rd = l.logic;
+    var detail = 'To chase: ' + flagged.join(', ');
+
+    // Programme context on the same card (extra, not a reason to include the row)
+    if (rd.state === 'BLOCKED') {
+      var wait = rd.waitingOnName
+        ? (rd.waitingOnName + ' (' + rd.waitingOn + ')')
+        : (rd.waitingOn || 'predecessor');
+      detail += '  \u00b7  also waiting on ' + wait;
+      if (isFrontierBlocked(rd, readinessById)) {
+        var held = heldCountInBand(r.id, bandRows);
+        if (held > 0) detail += '  \u00b7  holds ' + held + ' more in this window';
+      }
+      return { rank: 1, label: 'CHASE', detail: detail };
+    }
+    if (rd.state === 'ATTENTION') {
+      detail += '  \u00b7  feeding work still running';
+      return { rank: 2, label: 'CHASE', detail: detail };
+    }
+    if (r.driving) {
+      detail += '  \u00b7  on critical path';
+      return { rank: 3, label: 'CHASE', detail: detail };
+    }
+    return { rank: 4, label: 'CHASE', detail: detail };
+  }
+
+  function chaseRows(band) {
+    var rows = activeRows(band);
+    var seen = {};
+    var out = [];
+    rows.forEach(function (r) {
+      if (seen[r.id]) return;
+      var reason = chaseReason(r, rows);
+      if (!reason) return;
+      seen[r.id] = true;
+      out.push(r);
+    });
+    out.sort(function (a, b) {
+      var ra = chaseReason(a, rows), rb = chaseReason(b, rows);
+      if (!ra || !rb) return 0;
+      if (ra.rank !== rb.rank) return ra.rank - rb.rank;
+      var fa = a.floatDays == null ? 1e9 : a.floatDays, fb = b.floatDays == null ? 1e9 : b.floatDays;
+      return fa - fb;
+    });
+    return out;
+  }
+
+  function issueFingerprint(m, rows, kind) {
+    var basis = 'RHU-' + (kind || 'LOOKAHEAD') + '|' + state.band + 'wk|' + (m.schedule.name || '') + '|dd:' + (m.schedule.dataDate || '') + '|src:' + (m.schedule.sourceHash || '') + '|' + rows.map(function (r) { return r.id + '@' + (r.start || '') + '/' + (r.floatDays == null ? '' : r.floatDays) + '/' + statusWord(r.id); }).join(';');
+    return sha(basis);
+  }
+
+  function showIssueList(m) {
+    var band = m.lookahead.bands[state.band];
+    var rows = activeRows(band);
+    var droppedCount = band.count - rows.length;
+    var overlay = el('div', 'issue-overlay');
+    var sheet = el('div', 'issue-sheet');
+    var h = el('div', 'issue-head');
+    h.appendChild(el('div', 'issue-title', 'LOOK-AHEAD \u2014 NEXT ' + state.band + ' WEEKS'));
+    h.appendChild(el('div', 'issue-sub', (m.schedule.name || 'Programme') + '   \u00b7   data date ' + fmtDate(m.currency.dataDate) + '   \u00b7   issued ' + fmtDate(new Date().toISOString())));
+    sheet.appendChild(h);
+    var cap = 'Look-ahead for the gang \u2014 the full list of work still on your screen. Print it for the board, or Copy to WhatsApp or email. This is not the chase list.';
+    if (droppedCount) cap += '  ' + droppedCount + ' activit' + (droppedCount === 1 ? 'y' : 'ies') + ' hidden (not this gang\u2019s domain) and left off this list.';
+    sheet.appendChild(el('div', 'issue-cap', cap));
+    if (!rows.length) {
+      sheet.appendChild(el('div', 'empty', droppedCount ? 'Everything in this window is hidden. Restore some on the look-ahead, then issue again.' : 'Nothing scheduled in this window.'));
+    } else {
+      var groups = {};
+      rows.forEach(function (r) { var k = weekKey(r.start); (groups[k] = groups[k] || []).push(r); });
+      Object.keys(groups).sort().forEach(function (k) {
+        var g = el('div', 'issue-week');
+        g.appendChild(el('div', 'issue-week-label', k.indexOf('undated') >= 0 ? 'Undated' : ('Week commencing ' + fmtDay(k))));
+        groups[k].forEach(function (r) {
+          var line = el('div', 'issue-line' + (r.driving ? ' issue-driving' : ''));
+          line.appendChild(el('span', 'il-date', fmtDay(r.start)));
+          var main = el('span', 'il-main');
+          main.appendChild(el('span', 'il-id', r.id));
+          main.appendChild(document.createTextNode(' ' + (r.name || '')));
+          if (r.driving) main.appendChild(el('span', 'il-crit', ' \u2014 CRITICAL'));
+          line.appendChild(main);
+          line.appendChild(el('span', 'il-float', r.floatDays == null ? '' : r.floatDays + 'd float'));
+          line.appendChild(el('span', 'il-status', statusWord(r.id)));
+          if (r.heldBy) line.appendChild(el('span', 'il-held', 'held by ' + r.heldBy));
+          g.appendChild(line);
+        });
+        sheet.appendChild(g);
+      });
+    }
+    var fptext = (m.schedule.name || '') + '|' + fmtDate(m.currency.dataDate) + '|w' + state.band + '|' + rows.map(function (r) { return r.id + ':' + r.floatDays + ':' + (r.heldBy || '') + ':' + statusWord(r.id); }).join(';');
+    var ihash = ''; try { ihash = window.AMELIE_SHA256.sha256(fptext); } catch (e) {}
+    if (ihash) sheet.appendChild(el('div', 'sketch-fp', 'Record \u00b7 SHA-256 ' + ihash));
+    sheet.appendChild(el('div', 'issue-frame', 'This is where each job stands, straight from the programme \u2014 facts, not orders. Every call on site is yours, never the app\u2019s. The approved programme runs the job.'));
+    sheet.appendChild(el('div', 'issue-fp', 'Fingerprint SHA-256: ' + issueFingerprint(m, rows, 'LOOKAHEAD') + (m.schedule.sourceHash ? '   \u00b7   from programme ' + shortHash(m.schedule.sourceHash) + '\u2026' : '')));
+    var bar = el('div', 'issue-bar');
+    var pr = el('button', 'btn btn-primary', 'Print'); pr.onclick = function () { window.print(); }; bar.appendChild(pr);
+    var wa = el('button', 'btn', 'WhatsApp'); wa.onclick = function () { shareIssue(m, rows, 'whatsapp'); }; bar.appendChild(wa);
+    var em = el('button', 'btn', 'Email'); em.onclick = function () { shareIssue(m, rows, 'email'); }; bar.appendChild(em);
+    var cp = el('button', 'btn', 'Copy'); cp.onclick = function () { copyIssue(m, rows, cp); }; bar.appendChild(cp);
+    var cl = el('button', 'btn btn-ghost', 'Close'); cl.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }; bar.appendChild(cl);
+    sheet.appendChild(bar);
+    overlay.appendChild(sheet); $('#app').appendChild(overlay);
+  }
+
+  /* ---------- chase list (supervisor only — what is not ready yet) ---------- */
+  function showChaseList(m) {
+    var band = m.lookahead.bands[state.band];
+    var allActive = activeRows(band);
+    var rows = chaseRows(band);
+    var overlay = el('div', 'issue-overlay');
+    var sheet = el('div', 'issue-sheet');
+    var h = el('div', 'issue-head');
+    h.appendChild(el('div', 'issue-title', 'CHASE LIST'));
+    h.appendChild(el('div', 'issue-sub', (m.schedule.name || 'Programme') + '   \u00b7   next ' + state.band + ' weeks   \u00b7   data date ' + fmtDate(m.currency.dataDate) + '   \u00b7   ' + fmtDate(new Date().toISOString())));
+    sheet.appendChild(h);
+    sheet.appendChild(el('div', 'issue-cap',
+      'Your chase list \u2014 only the items you flagged on the look-ahead (materials, crew, plant, access\u2026). Mark when needed, type what must be done, tick Completed when cleared. Not the gang board.'));
+
+    function noteKey(id) { return String(id); }
+    function normalizeNote(raw) {
+      if (!raw) return { when: null, text: '', done: false };
+      if (typeof raw === 'string') return { when: null, text: raw, done: false };
+      return {
+        when: raw.when || null,
+        text: raw.text || '',
+        done: !!raw.done
+      };
+    }
+    var WHEN_OPTS = [
+      { id: 'am', label: 'This AM' },
+      { id: 'today', label: 'Today' },
+      { id: 'urgent', label: 'Urgent' },
+      { id: 'week', label: 'This week' }
+    ];
+
+    function renderCard(opts) {
+      var note = normalizeNote(opts.note);
+      var card = el('div', 'chase-card' + (opts.cls ? ' ' + opts.cls : '') + (note.done ? ' is-done' : ''));
+      var top = el('div', 'chase-top');
+      top.appendChild(el('span', 'chase-id', opts.id));
+      top.appendChild(el('span', 'chase-name', opts.name || ''));
+      card.appendChild(top);
+      if (opts.meta) card.appendChild(el('div', 'chase-meta', opts.meta));
+      if (opts.items) {
+        var items = el('div', 'chase-items');
+        items.appendChild(el('div', 'chase-lab', 'Items noted'));
+        items.appendChild(document.createTextNode(opts.items));
+        card.appendChild(items);
+      }
+
+      // Action panel: light red while open, green only when Completed is ticked
+      var panel = el('div', 'chase-action' + (note.done ? ' is-done' : ''));
+      panel.appendChild(el('div', 'chase-status ' + (note.done ? 'done' : 'open'),
+        note.done ? 'Cleared' : 'Action needed'));
+
+      panel.appendChild(el('div', 'chase-lab', 'When'));
+      var whenRow = el('div', 'chase-when');
+      WHEN_OPTS.forEach(function (w) {
+        var lab = el('label', 'chase-chip' + (note.when === w.id ? ' on' : '') + (w.id === 'urgent' ? ' urgent' : ''));
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = note.when === w.id;
+        cb.onchange = function () {
+          var next = normalizeNote(opts.getNote ? opts.getNote() : note);
+          next.when = cb.checked ? w.id : null;
+          if (opts.onChange) opts.onChange(next);
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          showChaseList(m);
+        };
+        lab.appendChild(cb);
+        lab.appendChild(document.createTextNode(w.label));
+        whenRow.appendChild(lab);
+      });
+      panel.appendChild(whenRow);
+
+      panel.appendChild(el('div', 'chase-lab', 'What needs to be done'));
+      var ta = el('textarea', 'chase-notes');
+      ta.setAttribute && ta.setAttribute('rows', '2');
+      ta.setAttribute && ta.setAttribute('placeholder', 'e.g. Chase buyer for marble PO ref, need delivery week of 7 Sep\u2026');
+      ta.value = note.text || '';
+      ta.oninput = function () {
+        var next = normalizeNote(opts.getNote ? opts.getNote() : note);
+        next.text = ta.value;
+        if (opts.onChange) opts.onChange(next);
+      };
+      panel.appendChild(ta);
+
+      var doneRow = el('div', 'chase-done-row');
+      var doneLab = el('label', 'chase-done-lab');
+      var doneCb = document.createElement('input');
+      doneCb.type = 'checkbox';
+      doneCb.checked = !!note.done;
+      doneCb.onchange = function () {
+        var next = normalizeNote(opts.getNote ? opts.getNote() : note);
+        next.done = doneCb.checked;
+        if (opts.onChange) opts.onChange(next);
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        showChaseList(m);
+      };
+      doneLab.appendChild(doneCb);
+      doneLab.appendChild(document.createTextNode(note.done ? 'Completed \u2014 all okay' : 'Completed \u2014 mark all okay'));
+      doneRow.appendChild(doneLab);
+      panel.appendChild(doneRow);
+      card.appendChild(panel);
+
+      if (opts.onRemove) {
+        var acts = el('div', 'chase-card-actions');
+        var rm = el('button', 'btn btn-ghost', 'Remove from chase list');
+        rm.onclick = opts.onRemove;
+        acts.appendChild(rm);
+        card.appendChild(acts);
+      }
+      return card;
+    }
+
+    if (!rows.length && !(state.customChase || []).length) {
+      sheet.appendChild(el('div', 'empty',
+        'No programme gaps in this window yet. Tick constraints on the look-ahead, or add your own chase line below.'));
+    }
+
+    rows.forEach(function (r) {
+      var reason = chaseReason(r, allActive);
+      if (!reason) return;
+      var key = noteKey(r.id);
+      var cls = reason.rank === 1 ? 'chase-blocked' : (reason.rank === 3 ? 'chase-critical' : (reason.rank === 2 ? 'chase-gating' : ''));
+      var meta = (r.start ? ('starts ' + fmtDay(r.start)) : 'undated') +
+        (r.floatDays != null ? ('  \u00b7  ' + r.floatDays + 'd float') : '') +
+        (r.driving ? '  \u00b7  CRITICAL' : '') +
+        '  \u00b7  ' + reason.label;
+      sheet.appendChild(renderCard({
+        id: r.id,
+        name: r.name || '',
+        meta: meta,
+        items: reason.detail,
+        cls: cls,
+        note: state.chaseNotes[key],
+        getNote: function () { return state.chaseNotes[key]; },
+        onChange: function (val) { state.chaseNotes[key] = val; }
+      }));
+    });
+
+    // Custom / bespoke chase lines the user adds
+    (state.customChase || []).forEach(function (item, idx) {
+      sheet.appendChild(renderCard({
+        id: item.id || ('C' + (idx + 1)),
+        name: item.name || 'Custom chase',
+        meta: 'Your own chase line',
+        items: item.detail || null,
+        cls: 'chase-custom',
+        note: item.note || item.notes || null,
+        getNote: function () { return state.customChase[idx].note; },
+        onChange: function (val) { state.customChase[idx].note = val; },
+        onRemove: function () {
+          state.customChase.splice(idx, 1);
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          showChaseList(m);
+        }
+      }));
+    });
+
+    // Add a custom chase line
+    var addBox = el('div', 'chase-add');
+    addBox.appendChild(el('div', 'chase-lab', 'Add your own chase line'));
+    var addRow = el('div', 'chase-add-row');
+    var idIn = el('input', 'chase-add-in'); idIn.type = 'text'; idIn.setAttribute && idIn.setAttribute('placeholder', 'ID (optional)');
+    var nameIn = el('input', 'chase-add-in'); nameIn.type = 'text'; nameIn.setAttribute && nameIn.setAttribute('placeholder', 'What needs chasing');
+    addRow.appendChild(idIn); addRow.appendChild(nameIn);
+    addBox.appendChild(addRow);
+    var detailIn = el('textarea', 'chase-notes');
+    detailIn.setAttribute && detailIn.setAttribute('rows', '2');
+    detailIn.setAttribute && detailIn.setAttribute('placeholder', 'Detail \u2014 what is required');
+    addBox.appendChild(detailIn);
+    var addBtn = el('button', 'btn', 'Add to chase list');
+    addBtn.style.marginTop = '8px';
+    addBtn.onclick = function () {
+      var name = (nameIn.value || '').trim();
+      if (!name && !(detailIn.value || '').trim()) return;
+      state.customChase = state.customChase || [];
+      state.customChase.push({
+        id: (idIn.value || '').trim() || ('C' + (state.customChase.length + 1)),
+        name: name || 'Custom chase',
+        detail: (detailIn.value || '').trim() || null,
+        note: { when: null, text: '', done: false }
+      });
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      showChaseList(m);
+    };
+    addBox.appendChild(addBtn);
+    sheet.appendChild(addBox);
+
+    var fpRows = rows.concat((state.customChase || []).map(function (c) { return { id: c.id, name: c.name }; }));
+    var fp = issueFingerprint(m, fpRows, 'CHASE');
+    sheet.appendChild(el('div', 'issue-frame',
+      'Bespoke chase list with your notes. The issue list remains the full look-ahead for the men. Your call, never the app\u2019s.'));
+    sheet.appendChild(el('div', 'issue-fp', 'Fingerprint SHA-256: ' + fp + (m.schedule.sourceHash ? '   \u00b7   from programme ' + shortHash(m.schedule.sourceHash) + '\u2026' : '')));
+
+    var bar = el('div', 'issue-bar');
+    var pr = el('button', 'btn btn-primary', 'Print'); pr.onclick = function () { window.print(); }; bar.appendChild(pr);
+    var wa = el('button', 'btn', 'WhatsApp'); wa.onclick = function () { shareChase(m, rows, 'whatsapp'); }; bar.appendChild(wa);
+    var em = el('button', 'btn', 'Email'); em.onclick = function () { shareChase(m, rows, 'email'); }; bar.appendChild(em);
+    var cp = el('button', 'btn', 'Copy'); cp.onclick = function () { copyChase(m, rows, cp); }; bar.appendChild(cp);
+    var cl = el('button', 'btn btn-ghost', 'Close'); cl.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }; bar.appendChild(cl);
+    sheet.appendChild(bar);
+    overlay.appendChild(sheet); $('#app').appendChild(overlay);
+  }
+
+  function issueText(m, rows) {
+    var lines = ['LOOK-AHEAD \u2014 NEXT ' + state.band + ' WEEKS',
+      (m.schedule.name || 'Programme') + ' | data date ' + fmtDate(m.currency.dataDate) + ' | issued ' + fmtDate(new Date().toISOString()), ''];
+    rows.forEach(function (r) {
+      lines.push(fmtDay(r.start) + '  ' + r.id + ' ' + (r.name || '') + (r.driving ? ' [CRITICAL]' : '') + '  \u2014  ' + statusWord(r.id));
+    });
+    lines.push('', 'Facts, not orders. Every call on site is yours, never the app\u2019s. The approved programme runs the job.');
+    lines.push('Fingerprint SHA-256: ' + issueFingerprint(m, rows, 'LOOKAHEAD'));
+    return lines.join('\n');
+  }
+  function formatChaseNote(raw) {
+    if (!raw) return null;
+    if (typeof raw === 'string') return raw.trim() ? { when: null, text: raw.trim(), done: false } : null;
+    return {
+      when: raw.when || null,
+      text: (raw.text || '').trim(),
+      done: !!raw.done
+    };
+  }
+  function chaseText(m, rows) {
+    var band = m.lookahead.bands[state.band];
+    var allActive = activeRows(band);
+    var whenLabel = { am: 'This AM', today: 'Today', urgent: 'Urgent', week: 'This week' };
+    var lines = ['CHASE LIST',
+      (m.schedule.name || 'Programme') + ' | next ' + state.band + ' weeks | data date ' + fmtDate(m.currency.dataDate) + ' | ' + fmtDate(new Date().toISOString()),
+      'Bespoke chase list. Frontier gaps only. Not the gang board.', ''];
+    rows.forEach(function (r) {
+      var reason = chaseReason(r, allActive);
+      if (!reason) return;
+      var note = formatChaseNote(state.chaseNotes[String(r.id)]);
+      lines.push(r.id + '  ' + (r.name || '') + (note && note.done ? '  [COMPLETED]' : ''));
+      lines.push('  Items noted: ' + reason.detail);
+      if (note && note.when) lines.push('  When: ' + (whenLabel[note.when] || note.when));
+      if (note && note.text) lines.push('  To do: ' + note.text);
+      lines.push('');
+    });
+    (state.customChase || []).forEach(function (c) {
+      var note = formatChaseNote(c.note || c.notes);
+      lines.push((c.id || '') + '  ' + (c.name || 'Custom chase') + (note && note.done ? '  [COMPLETED]' : ''));
+      if (c.detail) lines.push('  Items noted: ' + c.detail);
+      if (note && note.when) lines.push('  When: ' + (whenLabel[note.when] || note.when));
+      if (note && note.text) lines.push('  To do: ' + note.text);
+      lines.push('');
+    });
+    lines.push('Your call, never the app\u2019s.');
+    lines.push('Fingerprint SHA-256: ' + issueFingerprint(m, rows, 'CHASE'));
+    return lines.join('\n');
+  }
+  function shareIssue(m, rows, how) {
+    var text = issueText(m, rows);
+    try {
+      if (how === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      else window.location.href = 'mailto:?subject=' + encodeURIComponent('Look-ahead \u2014 next ' + state.band + ' weeks') + '&body=' + encodeURIComponent(text);
+    } catch (e) {}
+  }
+  function copyIssue(m, rows, btn) {
+    var text = issueText(m, rows);
+    try { navigator.clipboard.writeText(text).then(function () { if (btn) btn.textContent = 'Copied'; }); }
+    catch (e) { if (btn) btn.textContent = 'Copy failed'; }
+  }
+  function shareChase(m, rows, how) {
+    var text = chaseText(m, rows);
+    try {
+      if (how === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      else window.location.href = 'mailto:?subject=' + encodeURIComponent('Chase list \u2014 not ready yet') + '&body=' + encodeURIComponent(text);
+    } catch (e) {}
+  }
+  function copyChase(m, rows, btn) {
+    var text = chaseText(m, rows);
+    try { navigator.clipboard.writeText(text).then(function () { if (btn) btn.textContent = 'Copied'; }); }
+    catch (e) { if (btn) btn.textContent = 'Copy failed'; }
+  }
+
+  /* ---------- help ---------- */
+  function helpSection(parent, title, items, asList) {
+    parent.appendChild(el('div', 'help-h', title));
+    if (asList) {
+      var ul = el('ul', 'help-list');
+      items.forEach(function (t) { ul.appendChild(el('li', null, t)); });
+      parent.appendChild(ul);
+    } else {
+      items.forEach(function (t) { parent.appendChild(el('p', 'help-p' + (t.blunt ? ' blunt' : ''), t.blunt || t)); });
+    }
+  }
+  function showHelp() {
+    var overlay = el('div', 'issue-overlay');
+    var sheet = el('div', 'issue-sheet');
+    var h = el('div', 'issue-head');
+    h.appendChild(el('div', 'issue-title', 'RIPPLE HEADS-UP \u2014 HELP'));
+    h.appendChild(el('div', 'issue-sub', 'What it\u2019s for, and how you might get the most out of it.'));
+    sheet.appendChild(h);
+
+    helpSection(sheet, 'Whose job this is', [
+      'You\u2019re the supervisor, the site engineer, the agent. Your job is to keep this job ahead of the programme \u2014 or at the very least, on it. You don\u2019t do that chasing the work after it\u2019s late. You do it by seeing what\u2019s coming and getting ahead of it.',
+      'That\u2019s all this app is: your next few weeks, laid out, tightest first, so nothing lands on you by surprise.'
+    ]);
+
+    helpSection(sheet, 'The one thing that makes or breaks it', [
+      { blunt: 'This app is only as good as the programme you feed it. It reads your site\u2019s approved programme \u2014 it does not make one up. No current programme, no app.' },
+      'So demand a copy, and demand it\u2019s kept updated for you. An XER out of Primavera P6, or a Save-As XML out of Microsoft Project. Get a fresh one every time the planner updates the job. That\u2019s not cheek \u2014 that\u2019s you doing your job. You cannot keep a job on track off a programme you\u2019re not allowed to see.',
+      { blunt: 'And be straight with yourself before you buy: if you can\u2019t get a regularly updated XER or MSP XML, do not buy this app. It\u2019ll waste your money and your time.' },
+      'The app only tells the truth off a live, updated works programme. Feed it a stale one and it\u2019ll show you a stale job \u2014 that\u2019s not the app failing, that\u2019s the programme. Get the programme right and it\u2019ll keep you ahead of the issues and the activities that keep the job on track.'
+    ]);
+
+    helpSection(sheet, 'Ways you might use it', [
+      'Look at it first thing. The next 2, 4, 6 or 8 weeks, tightest float first \u2014 know what\u2019s coming before it lands.',
+      'Watch the data date at the top. If the programme\u2019s weeks old, so is everything you\u2019re looking at. Chase the planner for an update.',
+      'Hide any activity that is not your gang\u2019s work. It leaves the list and will not print. Use \u201cShow hidden\u201d if you need to bring one back.',
+      'Tap a task name (or its coloured light) to open materials, approvals, crew, plant, access, external. Tick what needs looking into \u2014 those ticks go onto your Chase list.',
+      'Issue list for the men \u2014 the full look-ahead of work still on your screen. What the gang works to.',
+      'Chase list \u2014 YOUR list, not the men\u2019s. Anything you flagged on the look-ahead appears here. Itemise what must be done, mark when, tick Completed when cleared.',
+      'XML files: XER (P6 or Asta), Microsoft Project XML, and Asta exported as MSP XML or XER. Native .mpp and .pp are not read directly.',
+      'Held-by tells you what has to finish before a job can start \u2014 the ripple. Follow it back and you\u2019ll see the knock-ons coming.',
+      'Tick your own constraints \u2014 materials, crew, access \u2014 as you clear them. A light only goes green when the programme\u2019s clear and you\u2019ve marked it ready.',
+      'Run the self-test any time you doubt a number. Green, trust the screen. Red, don\u2019t.'
+    ], true);
+
+    helpSection(sheet, 'What the colours mean', [
+      'A red job is on the critical path \u2014 if it slips, the end date slips. These are the ones to protect.',
+      'The float number is your slack, in days. Big number, room to move. Small number, it\u2019s tight.',
+      'The light is a separate heads-up, nothing to do with critical. Green: clear to go. Amber: getting ready. Red: not ready, something\u2019s holding it.'
+    ], true);
+
+    helpSection(sheet, 'Where the app stops', [
+      'It reads your programme. It never reschedules it, never changes it, never sends it anywhere \u2014 it all stays on your device. It shows you where things stand and what\u2019s coming. Every call on site \u2014 what to start, what to chase, what to raise with the planner \u2014 is yours, never the app\u2019s. The approved programme runs the job.'
+    ]);
+
+    helpSection(sheet, 'Support', [
+      { blunt: 'App support: ' + ((window.RIPPLE_SUPPORT_EMAIL) || 'not set') },
+      'Email that address with the app revision (see the top bar), what you loaded (XER / MSP XML / Asta / CSV), and what went wrong. Screenshots help.',
+      'This is support for the app itself \u2014 not your site planner. For a new programme file, chase whoever issues the XER or XML on your job.'
+    ]);
+
+    helpSection(sheet, 'Fingerprints (SHA-256) \u2014 your record of what was issued', [
+      { blunt: 'A fingerprint is a long code the app prints at the bottom of an issue list, chase list, or quick plan. It is a SHA-256 hash: a fixed digital seal of exactly what was on that list at that moment.' },
+      'It is not a password, not a login, and not something you type in. You do not \u201copen\u201d the code like a file. You keep it \u2014 on the print, in the WhatsApp copy, or in your notes \u2014 so you can prove later what was handed out.'
+    ]);
+    helpSection(sheet, 'How you use a fingerprint on site', [
+      'Issue the list (or chase list / quick plan). At the bottom you will see something like: Fingerprint SHA-256: a3f1c9\u2026 and often a short programme fingerprint from the file you loaded.',
+      'Print it or Copy it. The full fingerprint travels with the text. Keep that print or message.',
+      'If there is a dispute later \u2014 \u201cwe were never told about that activity\u201d \u2014 you show the issued list and the fingerprint. Same list content always produces the same fingerprint. Change one activity, date, or status line and the fingerprint changes.',
+      'The short programme fingerprint on the horizon (after you load an XER or XML) is a seal of the programme file itself. If the planner sends a new file, that short code should change. If it has not, you may still be looking at the same file.'
+    ], true);
+    helpSection(sheet, 'How to explain it to others', [
+      'In plain words: \u201cThis code is a seal of this exact list. If the list is the same, the code is the same. If anything on the list changed, the code would be different.\u201d',
+      'It does not prove the work was done. It proves what was issued, from which programme snapshot, at the time of issue.',
+      'You do not need special software to \u201cread\u201d it on site. Compare the printed code to the one on a re-issued list: match means same content; different means something changed.',
+      'Technical name is SHA-256. You only need the idea: one-way digital fingerprint of the issued text. The app never sends it anywhere \u2014 it is calculated on your device.'
+    ], true);
+
+    var bar = el('div', 'issue-bar');
+    var cl = el('button', 'btn btn-ghost', 'Close'); cl.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }; bar.appendChild(cl);
+    sheet.appendChild(bar);
+    overlay.appendChild(sheet); $('#app').appendChild(overlay);
+  }
+
+  /* ---------- sketch-pad: the supervisor's OWN plan (not the site programme) ---------- */
+  function showSketch() {
+    var app = $('#app'); app.innerHTML = '';
+    var wrap = el('div', 'gate sketch');
+    var back = el('button', 'btn gate-help sketch-back', '\u2190 Back'); back.onclick = function () { state.model ? render() : showGate(); }; wrap.appendChild(back);
+    wrap.appendChild(el('div', 'gate-eyebrow', 'Quick Action Plan'));
+    wrap.appendChild(el('h1', 'gate-title', 'Quick Action Plan'));
+    wrap.appendChild(el('p', 'gate-lead', 'Your own quick plan for a bit of work \u2014 up to twenty jobs, each placed before, alongside or after the last, and coloured by how urgent you rate it. Red = needs action, green = clear. It is not the approved site programme and it\u2019s no substitute for one. It\u2019s yours to hand to your men, and it saves with a fingerprint so you keep your own record.'));
+    var titleIn = el('input', 'sketch-title'); titleIn.type = 'text'; titleIn.setAttribute && titleIn.setAttribute('placeholder', 'Plan title \u2014 e.g. Gravity Chamber Excavation'); titleIn.value = state.sketch.title || '';
+    titleIn.oninput = function () { state.sketch.title = titleIn.value; }; wrap.appendChild(titleIn);
+    var subIn = el('input', 'sketch-sub-in'); subIn.type = 'text'; subIn.setAttribute && subIn.setAttribute('placeholder', 'Subtitle \u2014 e.g. Zone 3, week commencing'); subIn.value = state.sketch.subtitle || '';
+    subIn.oninput = function () { state.sketch.subtitle = subIn.value; }; wrap.appendChild(subIn);
+    var meta = el('div', 'sketch-meta');
+    var pb = el('input', 'sketch-pb'); pb.type = 'text'; pb.setAttribute && pb.setAttribute('placeholder', 'Prepared by \u2014 your name'); pb.value = state.sketch.preparedBy || ''; pb.oninput = function () { state.sketch.preparedBy = pb.value; }; meta.appendChild(pb);
+    var sd = el('input', 'sketch-sd'); sd.type = 'date'; sd.value = state.sketch.startDate || todayISO(); sd.oninput = function () { state.sketch.startDate = sd.value; drawChart(); }; meta.appendChild(sd);
+    wrap.appendChild(meta);
+    var keyLink = el('button', 'sketch-keylink', 'Colour key \u2014 what each colour means (your own rating)'); keyLink.onclick = showColourKey; wrap.appendChild(keyLink);
+    var editor = el('div', 'sketch-editor');
+    state.sketch.activities.forEach(function (a, idx) {
+      var row = el('div', 'sketch-row');
+      var nm = el('input', 'sk-name'); nm.type = 'text'; nm.setAttribute && nm.setAttribute('placeholder', 'Job ' + (idx + 1)); nm.value = a.name || ''; nm.oninput = function () { a.name = nm.value; drawChart(); }; row.appendChild(nm);
+      var len = el('input', 'sk-len'); len.type = 'number'; len.min = '1'; len.value = a.length || 1; len.oninput = function () { a.length = len.value; drawChart(); }; row.appendChild(len);
+      row.appendChild(el('span', 'sk-unit', 'd'));
+      if (idx > 0) {
+        var sel = el('select', 'sk-place');
+        [['after', 'after'], ['alongside', 'alongside'], ['before', 'before']].forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; if ((a.placement || 'after') === o[0]) op.selected = true; sel.appendChild(op); });
+        sel.onchange = function () { a.placement = sel.value; drawChart(); }; row.appendChild(sel);
+      } else { row.appendChild(el('span', 'sk-place-first', 'first')); }
+      var sw = el('div', 'sk-colours');
+      SKETCH_COLOURS.forEach(function (c) {
+        var dot = el('button', 'sk-swatch' + ((a.colour || 'steel') === c.key ? ' sk-swatch-on' : ''));
+        dot.style.background = c.hex; dot.setAttribute && dot.setAttribute('title', c.label);
+        dot.onclick = function () { a.colour = c.key; showSketch(); }; sw.appendChild(dot);
+      });
+      row.appendChild(sw);
+      var del = el('button', 'sk-del', '\u00d7'); del.onclick = function () { state.sketch.activities.splice(idx, 1); showSketch(); }; row.appendChild(del);
+      editor.appendChild(row);
+    });
+    wrap.appendChild(editor);
+    if (state.sketch.activities.length < window.RHU_SKETCH.MAX) {
+      var add = el('button', 'btn sketch-add', '+ Add a job'); add.onclick = function () { state.sketch.activities.push({ name: '', length: 1, placement: 'after', colour: 'steel' }); showSketch(); }; wrap.appendChild(add);
+    } else { wrap.appendChild(el('div', 'sketch-max', 'Twenty jobs is the limit \u2014 this is a quick sketch, not a programme.')); }
+    var chart = el('div', 'sketch-chart'); chart.id = 'sk-chart'; wrap.appendChild(chart);
+    var foot = el('div', 'sketch-foot');
+    if (state.sketch.preparedBy) foot.appendChild(el('span', 'sketch-foot-by', 'Prepared by ' + state.sketch.preparedBy));
+    if (state.sketch.hash) foot.appendChild(el('span', 'sketch-foot-fp', 'SHA-256 ' + state.sketch.hash.slice(0, 12) + '\u2026'));
+    if (foot.children.length) wrap.appendChild(foot);
+    var bar = el('div', 'issue-bar');
+    var sv = el('button', 'btn btn-primary', 'Save'); sv.onclick = function () { saveCurrentSketch(); }; bar.appendChild(sv);
+    var pr = el('button', 'btn', 'Print / issue'); pr.onclick = function () { printSketch(); }; bar.appendChild(pr);
+    var dl = el('button', 'btn', 'Download chart'); dl.onclick = function () { downloadChart(); }; bar.appendChild(dl);
+    var bk = el('button', 'btn', 'Backup'); bk.onclick = function () { backupSketch(); }; bar.appendChild(bk);
+    var rs = el('button', 'btn btn-ghost', 'Restore'); rs.onclick = function () { restoreBackup(); }; bar.appendChild(rs);
+    var nw = el('button', 'btn btn-ghost', 'New'); nw.onclick = function () { state.sketch = { id: null, title: '', subtitle: '', preparedBy: state.sketch.preparedBy || '', startDate: '', activities: [] }; showSketch(); }; bar.appendChild(nw);
+    wrap.appendChild(bar);
+    var saved = window.RHU_SKETCH.load();
+    if (saved.length) {
+      wrap.appendChild(el('div', 'sketch-saved-h', 'Your saved plans'));
+      saved.slice().reverse().forEach(function (s) {
+        var srow = el('div', 'sketch-saved-row');
+        var open = el('button', 'sketch-saved-open', (s.title || 'Untitled plan') + '  \u00b7  ' + ((s.activities || []).length) + ' jobs'); open.onclick = function () { state.sketch = JSON.parse(JSON.stringify(s)); showSketch(); }; srow.appendChild(open);
+        var d = el('button', 'sk-del', '\u00d7'); d.onclick = function () { window.RHU_SKETCH.deleteSketch(s.id); showSketch(); }; srow.appendChild(d);
+        wrap.appendChild(srow);
+      });
+    }
+    app.appendChild(wrap);
+    drawChart();
+  }
+
+  var SKETCH_COLOURS = [
+    { key: 'steel', hex: '#2B4C6F', label: 'Normal \u2014 no special flag' },
+    { key: 'red', hex: '#D64B3E', label: 'Critical / urgent \u2014 your call' },
+    { key: 'amber', hex: '#E8A33D', label: 'Watch \u2014 getting tight, your call' },
+    { key: 'green', hex: '#3E9D63', label: 'Comfortable \u2014 room to move, your call' },
+    { key: 'blue', hex: '#4593CC', label: 'Info / note' }
+  ];
+  function colourHex(key) { for (var i = 0; i < SKETCH_COLOURS.length; i++) if (SKETCH_COLOURS[i].key === key) return SKETCH_COLOURS[i].hex; return '#2B4C6F'; }
+  function showColourKey() {
+    var overlay = el('div', 'issue-overlay'); overlay.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+    var sheet = el('div', 'issue-sheet'); sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+    sheet.appendChild(el('div', 'issue-title', 'Colour key'));
+    sheet.appendChild(el('p', 'note-body', 'These colours are YOUR own rating of how urgent each job is \u2014 your call, not the app\u2019s. They follow the usual site convention so your men read them at a glance.'));
+    SKETCH_COLOURS.forEach(function (c) {
+      var row = el('div', 'ck-row');
+      var dot = el('span', 'ck-dot'); dot.style.background = c.hex; row.appendChild(dot);
+      row.appendChild(el('span', 'ck-lab', c.label)); sheet.appendChild(row);
+    });
+    var bar = el('div', 'issue-bar');
+    var cl = el('button', 'btn btn-ghost', 'Close'); cl.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }; bar.appendChild(cl);
+    sheet.appendChild(bar); overlay.appendChild(sheet); $('#app').appendChild(overlay);
+  }
+
+  function escapeXml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+  // Professional short-range Gantt as SVG: two-tier week/day timescale, dotted day gridlines,
+  // heavy week lines, weekend shading, row banding. Fixed pixel sizing so it can't collapse and
+  // stays readable; the container scrolls sideways for longer plans.
+  function sketchSVG(sketch) {
+    var named = (sketch.activities || []).filter(function (a) { return (a.name || '').trim(); });
+    var lay = window.RHU_SKETCH.layout(named);
+    if (!lay.bars.length) return '';
+
+    var start = pdateObj(sketch.startDate || todayISO()) || new Date();
+    var weekStartDow = region().weekStart; // 1 Mon (UK), 0 Sun (Gulf/US)
+    var offset = (start.getDay() - weekStartDow + 7) % 7;
+    var gridStart = new Date(start.getTime() - offset * 864e5);
+    var numDays = Math.ceil((offset + Math.max(lay.span, 1)) / 7) * 7;
+    if (numDays < 7) numDays = 7;
+
+    // Proportions tuned for a clean short-range Gantt
+    var nameW = 200, rowH = 44, weekH = 26, dayRowH = 32, headerH = weekH + dayRowH;
+    var bottomPad = 10, dayW = 42;
+    var gridW = numDays * dayW;
+    var svgW = nameW + gridW + 8;
+    var svgH = headerH + lay.bars.length * rowH + bottomPad;
+    var weekendDays = state.region === 'GULF' ? [5, 6] : [0, 6];
+    var WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    var barH = 22;
+    var d, x, dt, w;
+
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + svgW + ' ' + svgH +
+      '" width="' + svgW + '" height="' + svgH +
+      '" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">';
+
+    // Background
+    s += '<rect x="0" y="0" width="' + svgW + '" height="' + svgH + '" fill="#FFFFFF"/>';
+
+    // Weekend column fills (body only)
+    for (d = 0; d < numDays; d++) {
+      dt = new Date(gridStart.getTime() + d * 864e5);
+      if (weekendDays.indexOf(dt.getDay()) >= 0) {
+        x = nameW + d * dayW;
+        s += '<rect x="' + x.toFixed(1) + '" y="' + headerH + '" width="' + dayW +
+          '" height="' + (svgH - headerH - bottomPad) + '" fill="#F0F3F5"/>';
+      }
+    }
+
+    // Week header band + week boundary lines
+    for (w = 0; w * 7 < numDays; w++) {
+      x = nameW + w * 7 * dayW;
+      var wS = new Date(gridStart.getTime() + w * 7 * 864e5);
+      var fill = (w % 2 === 0) ? '#1C2126' : '#2C333A';
+      s += '<rect x="' + x.toFixed(1) + '" y="0" width="' + (dayW * 7) + '" height="' + weekH + '" fill="' + fill + '"/>';
+      s += '<text x="' + (x + dayW * 3.5).toFixed(1) + '" y="' + (weekH / 2 + 4.5) +
+        '" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" letter-spacing="0.04em">' +
+        'WEEK ' + (w + 1) + '  ·  W/C ' + ('0' + wS.getDate()).slice(-2) + ' ' + MONTHS[wS.getMonth()] + '</text>';
+      // Strong week boundary through the grid
+      s += '<line x1="' + x.toFixed(1) + '" y1="' + weekH + '" x2="' + x.toFixed(1) +
+        '" y2="' + (svgH - bottomPad) + '" stroke="#C6CDD2" stroke-width="1.25"/>';
+    }
+
+    // Day header row + light day grid lines
+    s += '<rect x="' + nameW + '" y="' + weekH + '" width="' + gridW + '" height="' + dayRowH + '" fill="#F5F7F8"/>';
+    for (d = 0; d < numDays; d++) {
+      dt = new Date(gridStart.getTime() + d * 864e5);
+      x = nameW + d * dayW;
+      // Light vertical day line (skip on week starts — already drawn stronger)
+      if (d % 7 !== 0) {
+        s += '<line x1="' + x.toFixed(1) + '" y1="' + headerH + '" x2="' + x.toFixed(1) +
+          '" y2="' + (svgH - bottomPad) + '" stroke="#E4E8EA" stroke-width="1"/>';
+      }
+      s += '<text x="' + (x + dayW / 2).toFixed(1) + '" y="' + (weekH + 12) +
+        '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#5C666E">' + WD[dt.getDay()] + '</text>';
+      s += '<text x="' + (x + dayW / 2).toFixed(1) + '" y="' + (weekH + 25) +
+        '" text-anchor="middle" font-size="12" font-weight="700" fill="#1C2126">' +
+        ('0' + dt.getDate()).slice(-2) + '</text>';
+    }
+
+    // Frame lines
+    s += '<line x1="0" y1="' + headerH + '" x2="' + svgW + '" y2="' + headerH +
+      '" stroke="#1C2126" stroke-width="1.5"/>';
+    s += '<line x1="' + nameW + '" y1="0" x2="' + nameW + '" y2="' + (svgH - bottomPad) +
+      '" stroke="#1C2126" stroke-width="1.5"/>';
+    s += '<line x1="' + (nameW + gridW) + '" y1="0" x2="' + (nameW + gridW) +
+      '" y2="' + (svgH - bottomPad) + '" stroke="#C6CDD2" stroke-width="1"/>';
+    s += '<line x1="0" y1="' + (svgH - bottomPad) + '" x2="' + svgW + '" y2="' + (svgH - bottomPad) +
+      '" stroke="#C6CDD2" stroke-width="1"/>';
+
+    // Name column header label
+    s += '<text x="14" y="' + (headerH / 2 + 4) +
+      '" font-size="10" font-weight="800" fill="#5C666E" letter-spacing="0.12em">ACTIVITY</text>';
+
+    // Plan-start marker (vertical hi-vis line + small label)
+    var sx = nameW + offset * dayW;
+    s += '<line x1="' + sx.toFixed(1) + '" y1="' + headerH + '" x2="' + sx.toFixed(1) +
+      '" y2="' + (svgH - bottomPad) + '" stroke="#F2A900" stroke-width="2"/>';
+    s += '<rect x="' + (sx - 1).toFixed(1) + '" y="' + (headerH - 14) +
+      '" width="2" height="14" fill="#F2A900"/>';
+
+    // Rows + bars
+    lay.bars.forEach(function (b, i) {
+      var y = headerH + i * rowH;
+
+      // Subtle row banding
+      if (i % 2 === 1) {
+        s += '<rect x="0" y="' + y + '" width="' + svgW + '" height="' + rowH + '" fill="#FAFBFC"/>';
+      }
+      // Row baseline
+      s += '<line x1="0" y1="' + (y + rowH) + '" x2="' + svgW + '" y2="' + (y + rowH) +
+        '" stroke="#E9ECEE" stroke-width="1"/>';
+
+      // Activity name (left column)
+      var nm = b.name;
+      if (nm.length > 30) nm = nm.slice(0, 29) + '\u2026';
+      s += '<text x="14" y="' + (y + rowH / 2 + 4.5).toFixed(1) +
+        '" font-size="13" font-weight="600" fill="#1C2126">' + escapeXml(nm) + '</text>';
+
+      // Bar geometry
+      var bx = nameW + (offset + b.start) * dayW;
+      var bw = Math.max(b.length * dayW - 3, 12); // small gap between adjacent bars
+      var by = y + (rowH - barH) / 2;
+      var hex = colourHex(b.colour);
+
+      // Soft drop shadow (simple offset rect)
+      s += '<rect x="' + (bx + 1.5).toFixed(1) + '" y="' + (by + 2).toFixed(1) +
+        '" width="' + bw.toFixed(1) + '" height="' + barH + '" rx="4" fill="rgba(28,33,38,0.12)"/>';
+
+      // Main bar
+      s += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) +
+        '" width="' + bw.toFixed(1) + '" height="' + barH + '" rx="4" fill="' + hex + '"/>';
+
+      // Top highlight for depth
+      s += '<rect x="' + (bx + 1.5).toFixed(1) + '" y="' + (by + 1.5).toFixed(1) +
+        '" width="' + Math.max(bw - 3, 0).toFixed(1) + '" height="4" rx="2" fill="rgba(255,255,255,0.22)"/>';
+
+      // Duration label — inside the bar when wide enough, otherwise to the right
+      var durLabel = b.length + 'd';
+      if (bw >= 36) {
+        s += '<text x="' + (bx + bw / 2).toFixed(1) + '" y="' + (by + barH / 2 + 4.5).toFixed(1) +
+          '" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">' + durLabel + '</text>';
+      } else {
+        s += '<text x="' + (bx + bw + 6).toFixed(1) + '" y="' + (y + rowH / 2 + 4.5).toFixed(1) +
+          '" font-size="11" font-weight="700" fill="#5C666E">' + durLabel + '</text>';
+      }
+    });
+
+    s += '</svg>';
+    return s;
+  }
+
+  function drawChart() {
+    var host = $('#sk-chart'); if (!host) return;
+    var svg = sketchSVG(state.sketch);
+    host.innerHTML = svg || '<div class="sketch-empty">Add a job to see the chart.</div>';
+  }
+
+  function sketchHash() {
+    var payload = JSON.stringify({ title: state.sketch.title, subtitle: state.sketch.subtitle, preparedBy: state.sketch.preparedBy, startDate: state.sketch.startDate, activities: state.sketch.activities, savedAt: state.sketch.savedAt || 0 });
+    try { return window.AMELIE_SHA256.sha256(payload); } catch (e) { return null; }
+  }
+  function saveCurrentSketch() {
+    if (!state.sketch.title) state.sketch.title = 'Untitled plan';
+    state.sketch.savedAt = Date.now();
+    state.sketch.hash = sketchHash();
+    state.sketch = window.RHU_SKETCH.saveSketch(state.sketch);
+    showSketch();
+  }
+  function printSketch() {
+    var overlay = el('div', 'issue-overlay'); var sheet = el('div', 'issue-sheet sketch-sheet');
+    var head = el('div', 'sk-print-head');
+    head.appendChild(iconEl('sk-print-icon'));
+    var ht = el('div', 'sk-print-titles');
+    ht.appendChild(el('div', 'sk-print-title', (state.sketch.title || 'Plan')));
+    if (state.sketch.subtitle) ht.appendChild(el('div', 'sk-print-subtitle', state.sketch.subtitle));
+    ht.appendChild(el('div', 'sk-print-sub', 'Supervisor\u2019s own plan \u2014 not the approved site programme   \u00b7   starts ' + fmtDate(state.sketch.startDate || todayISO()) + '   \u00b7   issued ' + fmtDate(new Date().toISOString())));
+    head.appendChild(ht);
+    sheet.appendChild(head);
+    var chart = el('div', 'sketch-chart'); chart.innerHTML = sketchSVG(state.sketch) || ''; sheet.appendChild(chart);
+    sheet.appendChild(el('div', 'issue-frame', 'This is the supervisor\u2019s own plan for a bit of work. It is not the approved site programme and it\u2019s no substitute for one. The approved programme runs the job.'));
+    if (!state.sketch.savedAt) state.sketch.savedAt = Date.now();
+    var hash = sketchHash();
+    var foot = el('div', 'sk-print-foot');
+    foot.appendChild(el('span', 'sk-print-by', 'Prepared by ' + (state.sketch.preparedBy || '\u2014')));
+    if (hash) foot.appendChild(el('span', 'sk-print-fp', 'SHA-256 ' + hash));
+    sheet.appendChild(foot);
+    var bar = el('div', 'issue-bar');
+    var pr = el('button', 'btn btn-primary', 'Print'); pr.onclick = function () { window.print(); }; bar.appendChild(pr);
+    var cl = el('button', 'btn btn-ghost', 'Close'); cl.onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }; bar.appendChild(cl);
+    sheet.appendChild(bar);
+    overlay.appendChild(sheet); $('#app').appendChild(overlay);
+  }
+
+  /* ---------- suppliers near you (opens the device's own map search; app fetches nothing) ---------- */
+  var SUPPLIER_CATS = [
+    ['Ready-mix concrete', 'ready-mix concrete supplier'],
+    ['Scaffolding hire', 'scaffolding hire'],
+    ['Plant & tool hire', 'plant hire tool hire'],
+    ['Aggregates & sand', 'aggregates sand gravel supplier'],
+    ['Steel & rebar', 'steel rebar supplier'],
+    ['Timber & formwork', 'timber merchant formwork'],
+    ['Builders merchant', 'builders merchant'],
+    ['Welfare & cabins', 'site welfare cabin hire'],
+    ['Skip & waste', 'skip hire waste'],
+    ['Crane hire', 'crane hire'],
+    ['Fuel & diesel', 'red diesel fuel supplier'],
+    ['PPE & workwear', 'ppe workwear supplier']
+  ];
+  function openSupplierSearch(q) { try { window.open('https://www.google.com/maps/search/' + encodeURIComponent(q + ' near me'), '_blank'); } catch (e) {} }
+  function showSuppliers() {
+    var app = $('#app'); app.innerHTML = '';
+    var wrap = el('div', 'gate suppliers');
+    var back = el('button', 'btn gate-help sketch-back', '\u2190 Back'); back.onclick = function () { state.model ? render() : showGate(); }; wrap.appendChild(back);
+    wrap.appendChild(iconEl('gate-icon'));
+    wrap.appendChild(el('div', 'gate-eyebrow', 'Materials & plant'));
+    wrap.appendChild(el('h1', 'gate-title', 'Suppliers near you'));
+    wrap.appendChild(el('p', 'gate-lead', 'Pick what you\u2019re after and it opens a map search on your device for suppliers near you. Needs an internet connection.'));
+    var grid = el('div', 'supplier-grid');
+    SUPPLIER_CATS.forEach(function (c) { var b = el('button', 'supplier-btn', c[0]); b.onclick = function () { openSupplierSearch(c[1]); }; grid.appendChild(b); });
+    wrap.appendChild(grid);
+    var custRow = el('div', 'supplier-custom');
+    var ci = el('input', 'supplier-in'); ci.type = 'text'; ci.setAttribute && ci.setAttribute('placeholder', 'Something else \u2014 type a material or service'); custRow.appendChild(ci);
+    var cb = el('button', 'btn supplier-go', 'Search'); cb.onclick = function () { if (ci.value) openSupplierSearch(ci.value); }; custRow.appendChild(cb);
+    wrap.appendChild(custRow);
+    wrap.appendChild(el('div', 'supplier-disclaimer', 'This opens a public map search on your device. Ripple Heads-Up has no affiliation with any supplier, doesn\u2019t recommend or endorse any of them, and can\u2019t guarantee their goods, prices or service. Check anyone out yourself before you rely on them.'));
+    app.appendChild(wrap);
+  }
+
+  /* ---------- sketch download / backup / restore ---------- */
+  function note(msg) { try { if (window.alert) window.alert(msg); } catch (e) {} }
+  function downloadFile(filename, content, mime) {
+    try {
+      var blob = new Blob([content], { type: mime || 'text/plain' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 800);
+    } catch (e) {}
+  }
+  function sketchFileName(ext) {
+    var t = (state.sketch.title || 'plan').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'plan';
+    return t + '_' + (state.sketch.startDate || todayISO()) + '.' + ext;
+  }
+  function downloadChart() {
+    var svg = sketchSVG(state.sketch); if (!svg) { note('Add a job first \u2014 there\u2019s nothing to download yet.'); return; }
+    downloadFile(sketchFileName('svg'), '<?xml version="1.0" encoding="UTF-8"?>\n' + svg, 'image/svg+xml');
+  }
+  function backupSketch() {
+    if (!window.RHU_SKETCH.hasWebCrypto()) { note('Encrypted backup needs a secure (https) context \u2014 not available from a plain file.'); return; }
+    var pass = window.prompt && window.prompt('Set a passphrase to protect this backup.\nYou\u2019ll need it to restore \u2014 there is no way back without it.');
+    if (!pass) return;
+    window.RHU_SKETCH.encryptBackup(state.sketch, pass).then(function (cipher) { downloadFile(sketchFileName('rhu'), cipher, 'application/octet-stream'); }).catch(function () { note('Couldn\u2019t make the backup.'); });
+  }
+  function restoreBackup() {
+    var input = document.createElement('input'); input.type = 'file'; input.accept = '.rhu,.json,application/json';
+    input.onchange = function () {
+      var f = input.files && input.files[0]; if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var text = reader.result, o;
+        try { o = JSON.parse(text); } catch (e) { note('That doesn\u2019t look like a Ripple Heads-Up backup.'); return; }
+        if (o && o.alg === 'AES-GCM-256') {
+          var pass = window.prompt && window.prompt('Passphrase for this backup:'); if (!pass) return;
+          window.RHU_SKETCH.decryptBackup(text, pass).then(function (sk) { state.sketch = sk; showSketch(); }).catch(function () { note('Wrong passphrase, or the backup is damaged.'); });
+        } else { state.sketch = o; showSketch(); }
+      };
+      reader.readAsText(f);
+    };
+    input.click();
+  }
+
+  /* ---------- boot ---------- */
+  document.addEventListener('DOMContentLoaded', function () { state.region ? showGate() : showRegionPick(); });
+  window.__RIPPLE_UI = { showGate: showGate, loadText: function (text, name) { state.model = window.RIPPLE_CORE.run({ kind: detectKind(text, name), text: text, fileName: name, region: state.region || 'UK' }); render(); } };
+})();
+
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
