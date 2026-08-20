@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#1a2332">
-  <meta name="mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ripple Heads-Up</title>
@@ -18,7 +14,7 @@
  *   3. The UI title, footer, topbar, core, and module versions all read this.
  * That is the whole process. No hunting through the file.
  * ============================================================ */
-window.RIPPLE_REV = '0.1.19';
+window.RIPPLE_REV = '0.1.20';
 /* Support contact shown in Help and for Store listing — change the string below */
 window.RIPPLE_SUPPORT_EMAIL = 'amelie.ai.support@gmail.com';
 window.RIPPLE_SUPPORT_LABEL = 'App support';
@@ -2109,17 +2105,38 @@ try {
     drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
   }
 
+  // Byte-level charset decode: UTF-8 (BOM or not), UTF-16, and legacy Windows code pages.
+  // Ported from XER Crosscheck (tested). Falls back to Windows-1256 (Arabic) / 1251 (Cyrillic).
+  function decodeBytes(u8){
+    if(u8.length>=3&&u8[0]===0xEF&&u8[1]===0xBB&&u8[2]===0xBF) return new TextDecoder('utf-8').decode(u8.subarray(3));
+    if(u8.length>=2&&u8[0]===0xFF&&u8[1]===0xFE) return new TextDecoder('utf-16le').decode(u8);
+    if(u8.length>=2&&u8[0]===0xFE&&u8[1]===0xFF) return new TextDecoder('utf-16be').decode(u8);
+    try{ return new TextDecoder('utf-8',{fatal:true}).decode(u8); }
+    catch(e){
+      var d1256=null,d1251=null;
+      try{d1256=new TextDecoder('windows-1256').decode(u8);}catch(e1){}
+      try{d1251=new TextDecoder('windows-1251').decode(u8);}catch(e2){}
+      var run=function(str,lo,hi){if(!str)return 0;var best=0,cur=0;
+        for(var i=0;i<str.length;i++){var c=str.charCodeAt(i);
+          if(c>=lo&&c<=hi){cur++;if(cur>best)best=cur;}else cur=0;}return best;};
+      var ar=run(d1256,0x600,0x6FF), cy=run(d1251,0x400,0x4FF);
+      if(ar>=4&&ar>=cy)return d1256;
+      if(cy>=4)return d1251;
+      return new TextDecoder('windows-1252').decode(u8);
+    }
+  }
+
   function loadFile(file) {
     var reader = new FileReader();
     reader.onload = function () {
       try {
-        var text = reader.result, kind = detectKind(text, file.name);
+        var text = decodeBytes(new Uint8Array(reader.result)), kind = detectKind(text, file.name);
         state.model = window.RIPPLE_CORE.run({ kind: kind, text: text, fileName: file.name, region: state.region || 'UK' });
         state.ticks = {}; state.openNotes = {}; state.dropped = {}; state.showHidden = false;
         state.chaseNotes = {}; state.customChase = []; render();
       } catch (e) { showError(e.message); }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   }
 
   function showError(msg) {
@@ -3324,13 +3341,6 @@ try {
   window.__RIPPLE_UI = { showGate: showGate, loadText: function (text, name) { state.model = window.RIPPLE_CORE.run({ kind: detectKind(text, name), text: text, fileName: name, region: state.region || 'UK' }); render(); } };
 })();
 
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').catch(function () {});
-  });
-}
 </script>
 </body>
 </html>
